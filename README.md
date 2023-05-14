@@ -1,6 +1,6 @@
-[![MasterHead](https://1.bp.blogspot.com/-7A4WynwLsM...)](https://rishavchanda.io)
+[![MasterHead](https://camo.githubusercontent.com/8fcc70ef30bef7b4f9d8093988f48069df1b8a2dee2eb802def0b6a392df2a99/68747470733a2f2f7468756d62732e647265616d7374696d652e636f6d2f622f686f72697a6f6e74616c2d62616e6e65722d68616e64732d747970696e672d6c6170746f702d6b6579626f6172642d766172696f75732d656c656374726f6e69632d646576696365732d73796d626f6c732d70726f6772616d6d696e672d736f6674776172652d686f72697a6f6e74616c2d3132353931373932322e6a7067)
 <h1 align="center">Hi 👋, I'm Sanjay Joshi</h1>
-<h3 align="center">A passionate software developer from India</h3>
+<h3 align="center">A Passionate Software Developer from India</h3>
 <img align="right" alt="Coding" width="400" src="https://media.tenor.com/NOYF3f82b_gAAAAC/programmer.gif">
 
 <p align="left"> <img src="https://komarev.com/ghpvc/?username=sanjayjoshi116&label=Profile%20views&color=0e75b6&style=flat" alt="sanjayjoshi116" /> </p>
