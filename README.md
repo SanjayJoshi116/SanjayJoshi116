@@ -30,12 +30,12 @@
 
 | Project | Stack | Description |
 |---------|-------|-------------|
-| **CINE DB** | React · TypeScript · Django · PostgreSQL | Movie & TV discovery app — watchlists, ratings, release calendar, episode tracking |
-| **Expense Tracker** | React 19 · Django · Celery · PostgreSQL | Personal finance — budgets, recurring expenses, spending reports |
-| **Gym Management** | Django · React · Vite | Gym operations & member management system |
+| **CINE DB** | React 18 · TypeScript · Ant Design · Express · Django · PostgreSQL · Docker | Movie & TV discovery app — watchlists, ratings, release calendar, episode tracking, TMDB integration |
+| **Expense Tracker** | React 19 · TypeScript · Django 6 · Celery · PostgreSQL · Ant Design · React Query · Zustand · Docker | Personal finance — budgets, recurring expenses, savings goals, debts, spending reports |
+| **Gym Management** | Django · React · Vite · PostgreSQL | Gym operations — member management, membership plans, trainer scheduling, attendance, payments |
 | **Chore App** | Node.js · Express · React · SQLite | Office chore tracking & assignment |
-| **Movie Dash v2** | React 19 · TypeScript · Vite · Chart.js · Ant Design | Movie analytics & data visualization dashboard |
-| **TV Dash** | React 18 · TypeScript · Vite · Recharts · Ant Design | TV series data visualization |
+| **TV Dash** | React 18 · TypeScript · Vite · Ant Design · Recharts | Personal watch-history dashboard — stats, analytics, poster grid, 5 themes, CSV-based |
+| **Blog Platform** | Django 6 · Python · SQLite | Personal blog with post draft & publish workflow |
 
 ### 🌐 Public Repos
 
@@ -46,6 +46,9 @@
 | [CricketScore](https://github.com/SanjayJoshi116/CricketScore) | ★1 | Python · Jupyter | IPL / ODI / T20 first innings score predictor |
 | [Extra-Curricular-Activity-Management](https://github.com/SanjayJoshi116/Extra-Curricular-Activity-Management) | ★2 | PHP · HTML · MySQL | School & college extracurricular activity management web app |
 | [CustomerSegmentation](https://github.com/SanjayJoshi116/CustomerSegmentation) | — | Python · K-Means | Customer clustering analysis on 51,000 records |
+| [movie-dash-v2](https://github.com/SanjayJoshi116/movie-dash-v2) | ★1 | React 19 · TypeScript · Vite · Chart.js · Ant Design | Movie analytics & data visualization dashboard |
+| [MachineLearningPrograms](https://github.com/SanjayJoshi116/MachineLearningPrograms) | ★1 | Python · Jupyter | Collection of ML algorithm implementations |
+| [ImageResize](https://github.com/SanjayJoshi116/ImageResize) | ★1 | CSS · HTML | Assignment — image resizing utility |
 
 ---
 
@@ -57,7 +60,7 @@
 
 **Frontend**
 
-![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white) ![Ant Design](https://img.shields.io/badge/Ant%20Design-%230170FE.svg?style=for-the-badge&logo=antdesign&logoColor=white) ![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white) ![Bootstrap](https://img.shields.io/badge/bootstrap-%23563D7C.svg?style=for-the-badge&logo=bootstrap&logoColor=white)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white) ![Ant Design](https://img.shields.io/badge/Ant%20Design-%230170FE.svg?style=for-the-badge&logo=antdesign&logoColor=white) ![Recharts](https://img.shields.io/badge/Recharts-22B5BF?style=for-the-badge&logo=recharts&logoColor=white) ![Chart.js](https://img.shields.io/badge/chart.js-F5788D.svg?style=for-the-badge&logo=chart.js&logoColor=white) ![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white) ![Bootstrap](https://img.shields.io/badge/bootstrap-%23563D7C.svg?style=for-the-badge&logo=bootstrap&logoColor=white)
 
 **State & Data**
 
