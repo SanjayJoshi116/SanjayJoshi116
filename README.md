@@ -94,7 +94,8 @@
 <p align="center">
   <img src="https://github-readme-stats.vercel.app/api?username=SanjayJoshi116&theme=highcontrast&hide_border=true&include_all_commits=true&count_private=true" /><br/>
   <img src="https://github-readme-streak-stats.herokuapp.com/?user=SanjayJoshi116&theme=highcontrast&hide_border=true" /><br/>
-  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=SanjayJoshi116&theme=highcontrast&hide_border=true&include_all_commits=true&count_private=true&layout=compact" />
+  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=SanjayJoshi116&theme=highcontrast&hide_border=true&include_all_commits=true&count_private=true&layout=compact" /><br/>
+  <img src="https://github-contributor-stats.vercel.app/api?username=SanjayJoshi116&limit=5&theme=highcontrast&combine_all_yearly_contributions=true" />
 </p>
 
 ---
