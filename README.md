@@ -32,9 +32,11 @@
 | **CINE DB** | React 18 · TypeScript · Ant Design · Express · Django · PostgreSQL · Docker | Movie & TV discovery app — watchlists, ratings, release calendar, episode tracking, TMDB integration |
 | **Expense Tracker** | React 19 · TypeScript · Django 6 · Celery · PostgreSQL · Ant Design · React Query · Zustand · Docker | Personal finance — budgets, recurring expenses, savings goals, debts, spending reports |
 | **Gym Management** | Django · React · Vite · PostgreSQL | Gym operations — member management, membership plans, trainer scheduling, attendance, payments |
+| **FitTrack** | Django · DRF · React · TypeScript · Vite · Ant Design · PostgreSQL | Fitness tracker on the exercisedb.dev catalog — 1,500+ exercises, workout plans, session logging, progress tracking; JWT auth |
 | **Chore App** | Node.js · Express · React · SQLite | Office chore tracking & assignment |
 | **TV Dash** | React 18 · TypeScript · Vite · Ant Design · Recharts | Personal watch-history dashboard — stats, analytics, poster grid, 5 themes, CSV-based |
 | **Blog Platform** | Django 6 · Python · SQLite | Personal blog with post draft & publish workflow |
+| **Quant Backtester** | Python · Pandas · NumPy · scikit-learn · XGBoost · Streamlit · Plotly | NSE swing-trading system — Pine Script signals validated by a 10-yr/185-stock backtester, daily email alert bot with entry/SL/TP and conviction scoring |
 
 ### 🌐 Public Repos
 
@@ -79,7 +81,7 @@
 
 **ML / Data Science**
 
-![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white) ![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white) ![scikit-learn](https://img.shields.io/badge/scikit--learn-%23F7931E.svg?style=for-the-badge&logo=scikit-learn&logoColor=white) ![Anaconda](https://img.shields.io/badge/Anaconda-%2344A833.svg?style=for-the-badge&logo=anaconda&logoColor=white)
+![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white) ![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white) ![scikit-learn](https://img.shields.io/badge/scikit--learn-%23F7931E.svg?style=for-the-badge&logo=scikit-learn&logoColor=white) ![XGBoost](https://img.shields.io/badge/XGBoost-016A70?style=for-the-badge) ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white) ![Plotly](https://img.shields.io/badge/Plotly-3F4F75?style=for-the-badge&logo=plotly&logoColor=white) ![Anaconda](https://img.shields.io/badge/Anaconda-%2344A833.svg?style=for-the-badge&logo=anaconda&logoColor=white)
 
 **Design**
 
