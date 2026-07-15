@@ -43,14 +43,13 @@
 
 | Project | Stack | Description |
 |---------|-------|-------------|
-| **CINE DB** | React 18 · TypeScript · Ant Design · Express · Django · PostgreSQL · Docker | Movie & TV discovery app — watchlists, ratings, release calendar, episode tracking, TMDB integration |
-| **Expense Tracker** | React 19 · TypeScript · Django 6 · Celery · Redis · PostgreSQL · Ant Design · React Query · Zustand · Docker | Personal finance — budgets, recurring expenses, debts w/ amortized payoff tracking, investments, insurance, net worth; 45+ features |
-| **Gym Management** | Django · React · Vite · PostgreSQL | Gym operations — member management, membership plans, trainer scheduling, attendance, payments |
-| **FitTrack** | Django · DRF · React · TypeScript · Vite · Ant Design · PostgreSQL | Fitness tracker on the exercisedb.dev catalog — 1,500+ exercises, workout plans, session logging, progress tracking; JWT auth |
-| **Chore App** | Node.js · Express · React · SQLite | Office chore tracking & assignment |
-| **TV Dash** | React 18 · TypeScript · Vite · Ant Design · Recharts | Personal watch-history dashboard — stats, analytics, poster grid, 3 themes, CSV-based |
+| **Expense Tracker** | React 19 · TypeScript · Django 6 · Celery · Redis · PostgreSQL · Ant Design · React Query · Zustand · Docker | Personal finance — budgets, recurring expenses, debts w/ amortized payoff tracking, investments, insurance, net worth; 46 features |
+| **Gym Management** | Django 5 · DRF · React 19 · Vite · PostgreSQL | Two-portal gym operations — member management, membership plans, trainer scheduling, attendance, payments, reports |
+| **FitTrack** | Django 6 · DRF · React 19 · TypeScript · Vite · Ant Design · PostgreSQL | Fitness tracker on the exercisedb.dev catalog — 1,500+ exercises, workout plans, session logging, progress tracking; JWT auth |
+| **Chore App** | Node.js · Express · React 19 · SQLite | Office chore tracking & assignment |
+| **TV Dash** | React 18 · TypeScript · Vite · Ant Design · Recharts | Personal watch-history dashboard — 14 charts, poster grid, filters, 3 themes, CSV-based |
 | **Blog Platform** | Django 6 · Python · SQLite | Personal blog with post draft & publish workflow |
-| **Quant Backtester** | Python · Pandas · NumPy · scikit-learn · XGBoost · Streamlit · Plotly | NSE swing-trading system — Pine Script signals validated by a 10-yr/185-stock backtester, daily email alert bot with entry/SL/TP and conviction scoring |
+| **Quant Backtester** | Python · Pandas · NumPy · scikit-learn · XGBoost · Streamlit · Plotly | NSE swing-trading system — Pine Script signals validated by a 10-yr/185-stock backtester; daily email alert bot scans full NSE universe (2,258 tickers) w/ entry/SL/TP and conviction scoring |
 
 </div>
 
@@ -60,12 +59,13 @@
 
 | Project | Stars | Stack | Description |
 |---------|:-----:|-------|-------------|
+| [movie-app-v2](https://github.com/SanjayJoshi116/movie-app-v2) | ★2 | React 18 · TypeScript · Django 4 · DRF · PostgreSQL · Docker | Full-stack movie & TV tracker powered by TMDB — JWT auth, K-means recommendations, CSV import/export, stats dashboard |
 | [StartupSuccessPrediction](https://github.com/SanjayJoshi116/StartupSuccessPrediction) | ★1 | Python · scikit-learn | Linear Regression to forecast startup viability by funding thresholds |
 | [HousePricePrediction](https://github.com/SanjayJoshi116/HousePricePrediction) | ★1 | Python · scikit-learn | Mumbai property valuation via regression analysis |
 | [CricketScore](https://github.com/SanjayJoshi116/CricketScore) | ★1 | Python · Jupyter | IPL / ODI / T20 first innings score predictor |
 | [Extra-Curricular-Activity-Management](https://github.com/SanjayJoshi116/Extra-Curricular-Activity-Management) | ★2 | PHP · HTML · MySQL | School & college extracurricular activity management web app |
 | [CustomerSegmentation](https://github.com/SanjayJoshi116/CustomerSegmentation) | — | Python · K-Means | Customer clustering analysis on 51,000 records |
-| [movie-dash-v2](https://github.com/SanjayJoshi116/movie-dash-v2) | ★1 | React 19 · TypeScript · Vite · Chart.js · Ant Design | Movie analytics & data visualization dashboard |
+| [movie-dash-v2](https://github.com/SanjayJoshi116/movie-dash-v2) | ★1 | React 19 · TypeScript · Vite · Chart.js · Ant Design | Movie analytics dashboard — 6-tab stats view, filterable/sortable table, light/dark themes |
 | [MachineLearningPrograms](https://github.com/SanjayJoshi116/MachineLearningPrograms) | ★1 | Python · Jupyter | Collection of ML algorithm implementations |
 | [ImageResize](https://github.com/SanjayJoshi116/ImageResize) | ★1 | CSS · HTML | Assignment — image resizing utility |
 
