@@ -43,13 +43,12 @@
 
 | Project | Stack | Description |
 |---------|-------|-------------|
-| **Expense Tracker** | React 19 · TypeScript · Django 6 · Celery · Redis · PostgreSQL · Ant Design · React Query · Zustand · Docker | Personal finance — budgets, recurring expenses, debts w/ amortized payoff tracking, investments, insurance, net worth; 46 features |
+| **Expense Tracker** | React 19 · TypeScript · Django 6 · Celery · Redis · PostgreSQL · Ant Design · React Query · Zustand · Docker | Personal finance — budgets, recurring expenses, debts w/ amortized payoff tracking, investments, insurance, net worth; 61 features |
 | **Gym Management** | Django 5 · DRF · React 19 · Vite · PostgreSQL | Two-portal gym operations — member management, membership plans, trainer scheduling, attendance, payments, reports |
 | **FitTrack** | Django 6 · DRF · React 19 · TypeScript · Vite · Ant Design · PostgreSQL | Fitness tracker on the exercisedb.dev catalog — 1,500+ exercises, workout plans, session logging, progress tracking; JWT auth |
 | **Chore App** | Node.js · Express · React 19 · SQLite | Office chore tracking & assignment |
-| **TV Dash** | React 18 · TypeScript · Vite · Ant Design · Recharts | Personal watch-history dashboard — 14 charts, poster grid, filters, 3 themes, CSV-based |
 | **Blog Platform** | Django 6 · Python · SQLite | Personal blog with post draft & publish workflow |
-| **Quant Backtester** | Python · Pandas · NumPy · scikit-learn · XGBoost · Streamlit · Plotly | NSE swing-trading system — Pine Script signals validated by a 10-yr/185-stock backtester; daily email alert bot scans full NSE universe (2,258 tickers) w/ entry/SL/TP and conviction scoring |
+| **Quant Backtester + SwingTrade AI** | Python · Pandas · NumPy · scikit-learn · XGBoost · Streamlit · Plotly · Django · DRF · React · TypeScript · Ant Design · PostgreSQL · Redis · Celery | NSE swing-trading system — Pine Script signals validated by a 10-yr/185-stock backtester w/ paper-trading simulator; daily email alert bot scans full NSE universe (2,258 tickers) w/ entry/SL/TP and conviction scoring; SwingTrade AI companion app — fundamental + technical composite scoring screener, Django/React stack |
 
 </div>
 
@@ -65,7 +64,8 @@
 | [CricketScore](https://github.com/SanjayJoshi116/CricketScore) | ★1 | Python · Jupyter | IPL / ODI / T20 first innings score predictor |
 | [Extra-Curricular-Activity-Management](https://github.com/SanjayJoshi116/Extra-Curricular-Activity-Management) | ★2 | PHP · HTML · MySQL | School & college extracurricular activity management web app |
 | [CustomerSegmentation](https://github.com/SanjayJoshi116/CustomerSegmentation) | — | Python · K-Means | Customer clustering analysis on 51,000 records |
-| [movie-dash-v2](https://github.com/SanjayJoshi116/movie-dash-v2) | ★1 | React 19 · TypeScript · Vite · Chart.js · Ant Design | Movie analytics dashboard — 6-tab stats view, filterable/sortable table, light/dark themes |
+| [movie-dash-v2](https://github.com/SanjayJoshi116/movie-dash-v2) | ★1 | React 19 · TypeScript · Vite · Chart.js · Ant Design | Movie analytics dashboard — table/grid catalogue w/ poster art, 6-tab stats view, mobile nav, hardened Express API, CSV export, light/dark themes |
+| [tv-dash](https://github.com/SanjayJoshi116/tv-dash) | ★1 | React 18 · TypeScript · Vite · Ant Design · Recharts | Personal watch-history dashboard — 14 charts, poster grid, filters, 3 themes, CSV-based |
 | [MachineLearningPrograms](https://github.com/SanjayJoshi116/MachineLearningPrograms) | ★1 | Python · Jupyter | Collection of ML algorithm implementations |
 | [ImageResize](https://github.com/SanjayJoshi116/ImageResize) | ★1 | CSS · HTML | Assignment — image resizing utility |
 
