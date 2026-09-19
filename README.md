@@ -1,12 +1,12 @@
 <p align="center">
 
-[![header](https://capsule-render.vercel.app/api?type=waving&color=0:0D1117,100:58A6FF&height=200&section=header&text=Sanjay%20Joshi&fontSize=60&fontAlignY=38&fontColor=FFFFFF&desc=ML%20%7C%20Full-Stack%20Dev%20%7C%20Photographer&descAlignY=58&descAlign=50&descColor=A0C4FF)](https://github.com/SanjayJoshi116)
+[![header](https://capsule-render.vercel.app/api?type=waving&color=0:0D1117,100:58A6FF&height=200&section=header&text=Sanjay%20Joshi&fontSize=60&fontAlignY=38&fontColor=FFFFFF&desc=ML%20%7C%20Computer%20Vision%20%7C%20Full-Stack%20Dev%20%7C%20Photographer&descAlignY=58&descAlign=50&descColor=A0C4FF)](https://github.com/SanjayJoshi116)
 
 </p>
 
 <p align="center">
   <a href="https://readme-typing-svg.demolab.com">
-    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=58A6FF&center=true&vCenter=true&width=620&lines=Building+ML+models+%26+data+pipelines;Crafting+full-stack+apps+with+React+%26+Django;Exploring+TypeScript+%26+modern+frontend;Passionate+about+Photography+%26+Data" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=58A6FF&center=true&vCenter=true&width=620&lines=Building+ML+models+%26+data+pipelines;Real-time+vision+systems+for+agriculture;Backtesting+NSE+swing-trading+strategies;Crafting+full-stack+apps+with+React+%26+Django;Passionate+about+Photography+%26+Data" alt="Typing SVG" />
   </a>
 </p>
 
@@ -16,7 +16,9 @@
 
 <div align="center">
 
+- 🌾 **Software Developer @ Agrileaf** — real-time computer vision for agriculture & industrial inspection (YOLO11 on Raspberry Pi, driving actuators & sensors)
 - 🤖 **Machine Learning** — regression, classification, clustering on real-world datasets
+- 📈 **Quant Research** — walk-forward backtesting & systematic swing-trading on NSE equities
 - 🌐 **Full-Stack Developer** — React + TypeScript frontend, Django + Node.js backend
 - 📸 **Photographer** — hobby, capturing moments one frame at a time
 - 🎬 Into **Movies, Web Series, and Anime** when not coding
@@ -43,12 +45,14 @@
 
 | Project | Stack | Description |
 |---------|-------|-------------|
-| **Expense Tracker** | React 19 · TypeScript · Django 6 · Celery · Redis · PostgreSQL · Ant Design · React Query · Zustand · Docker | Personal finance — budgets, recurring expenses, debts w/ amortized payoff tracking, investments, insurance, net worth; 61 features |
+| **SwingTrade AI** | Django · DRF · PostgreSQL · Celery · Redis · React · TypeScript · Vite · Ant Design · Docker | NSE swing-trade screener (v0.20) — ingests OHLCV + NSE-XBRL fundamentals across 750+ stocks, 21 setup detectors, market-regime detection, weighted entry scoring w/ entry zones & stop-loss, risk-based position sizing, portfolio limits, watchlist email/Telegram alerts; built-in backtester (22 strategies, real Indian delivery costs, Sharpe/Sortino/Calmar vs NIFTY 50) |
+| **Swing-Trade Research Platform** | Python · Django · PostgreSQL · Pandas · LightGBM · PyTorch · Docker | Research & backtesting platform for systematic NSE portfolio strategies (v0.38) — pre-registered, frozen baselines evaluated under walk-forward validation and 3-tier cost/slippage tests; size, value, momentum & multi-factor studies, turnover-aware LightGBM, Kronos pretrained model baseline |
+| **NSE Signal Bot & Backtester** *(w/ [@Tilak004](https://github.com/Tilak004))* | Python · Pandas · NumPy · Pine Script · Streamlit · Plotly | 3-layer swing-trading system — TradingView Pine Script signals (EMA mesh, SL/TP) → 10-yr Python backtester w/ Monte Carlo & optimization → daily email alert bot scanning NSE w/ entry/SL/TP and conviction scoring; paper-trade ledger via CI |
+| **Expense Tracker** | React 19 · TypeScript · Django 6 · Celery · Redis · PostgreSQL · Ant Design · React Query · Zustand · Docker | Self-hosted personal finance (v1.7) — budgets, recurring payments, savings goals, debts w/ amortized payoff, investments, insurance, bank-account linkage, net worth dashboard; 20+ planning tools (FI planner, XIRR, tax planning, rebalancing, retirement simulator) |
 | **Gym Management** | Django 5 · DRF · React 19 · Vite · PostgreSQL | Two-portal gym operations — member management, membership plans, trainer scheduling, attendance, payments, reports |
-| **FitTrack** | Django 6 · DRF · React 19 · TypeScript · Vite · Ant Design · PostgreSQL | Fitness tracker on the exercisedb.dev catalog — 1,500+ exercises, workout plans, session logging, progress tracking; JWT auth |
+| **FitTrack** | Django 6 · DRF · React 19 · TypeScript · Vite · Ant Design · PostgreSQL | Fitness tracker on the exercisedb.dev catalog (v0.9) — 1,500+ exercises, workout plans, session logging, progress page w/ streak & volume stats; JWT auth |
 | **Chore App** | Node.js · Express · React 19 · SQLite | Office chore tracking & assignment |
 | **Blog Platform** | Django 6 · Python · SQLite | Personal blog with post draft & publish workflow |
-| **Quant Backtester + SwingTrade AI** | Python · Pandas · NumPy · scikit-learn · XGBoost · Streamlit · Plotly · Django · DRF · React · TypeScript · Ant Design · PostgreSQL · Redis · Celery | NSE swing-trading system — Pine Script signals validated by a 10-yr/185-stock backtester w/ paper-trading simulator; daily email alert bot scans full NSE universe (2,258 tickers) w/ entry/SL/TP and conviction scoring; SwingTrade AI companion app — fundamental + technical composite scoring screener, Django/React stack |
 
 </div>
 
@@ -58,7 +62,7 @@
 
 | Project | Stars | Stack | Description |
 |---------|:-----:|-------|-------------|
-| [movie-app-v2](https://github.com/SanjayJoshi116/movie-app-v2) | ★2 | React 18 · TypeScript · Django 4 · DRF · PostgreSQL · Docker | Full-stack movie & TV tracker powered by TMDB — JWT auth, K-means recommendations, CSV import/export, stats dashboard |
+| [movie-app-v2](https://github.com/SanjayJoshi116/movie-app-v2) (CINE DB) | ★2 | React 18 · TypeScript · Ant Design · Django · DRF · PostgreSQL · Docker · Playwright | Full-stack movie & TV tracker powered by TMDB — JWT auth, ML recommendations, watchlists & custom lists, release calendar, CSV import/export, stats dashboard, CI + E2E tests |
 | [StartupSuccessPrediction](https://github.com/SanjayJoshi116/StartupSuccessPrediction) | ★1 | Python · scikit-learn | Linear Regression to forecast startup viability by funding thresholds |
 | [HousePricePrediction](https://github.com/SanjayJoshi116/HousePricePrediction) | ★1 | Python · scikit-learn | Mumbai property valuation via regression analysis |
 | [CricketScore](https://github.com/SanjayJoshi116/CricketScore) | ★1 | Python · Jupyter | IPL / ODI / T20 first innings score predictor |
@@ -127,7 +131,23 @@
 
 <p align="center">
 
-![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white) ![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white) ![scikit-learn](https://img.shields.io/badge/scikit--learn-%23F7931E.svg?style=for-the-badge&logo=scikit-learn&logoColor=white) ![XGBoost](https://img.shields.io/badge/XGBoost-016A70?style=for-the-badge) ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white) ![Plotly](https://img.shields.io/badge/Plotly-3F4F75?style=for-the-badge&logo=plotly&logoColor=white) ![Anaconda](https://img.shields.io/badge/Anaconda-%2344A833.svg?style=for-the-badge&logo=anaconda&logoColor=white)
+![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white) ![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white) ![scikit-learn](https://img.shields.io/badge/scikit--learn-%23F7931E.svg?style=for-the-badge&logo=scikit-learn&logoColor=white) ![XGBoost](https://img.shields.io/badge/XGBoost-016A70?style=for-the-badge) ![LightGBM](https://img.shields.io/badge/LightGBM-02569B?style=for-the-badge) ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white) ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white) ![Plotly](https://img.shields.io/badge/Plotly-3F4F75?style=for-the-badge&logo=plotly&logoColor=white) ![Anaconda](https://img.shields.io/badge/Anaconda-%2344A833.svg?style=for-the-badge&logo=anaconda&logoColor=white)
+
+</p>
+
+**Computer Vision & Hardware**
+
+<p align="center">
+
+![YOLO11](https://img.shields.io/badge/YOLO11-111F68?style=for-the-badge) ![OpenCV](https://img.shields.io/badge/opencv-%235C3EE8.svg?style=for-the-badge&logo=opencv&logoColor=white) ![PaddleOCR](https://img.shields.io/badge/PaddleOCR-0062B3?style=for-the-badge) ![Flask](https://img.shields.io/badge/flask-%23000.svg?style=for-the-badge&logo=flask&logoColor=white) ![Raspberry Pi](https://img.shields.io/badge/-Raspberry_Pi-C51A4A?style=for-the-badge&logo=Raspberry-Pi) ![Arduino](https://img.shields.io/badge/-Arduino-00979D?style=for-the-badge&logo=Arduino&logoColor=white)
+
+</p>
+
+**DevOps & Testing**
+
+<p align="center">
+
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white) ![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white) ![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
 
 </p>
 
