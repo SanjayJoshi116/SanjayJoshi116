@@ -172,12 +172,6 @@
 ---
 
 <p align="center">
-  <a href="https://visitcount.itsvg.in">
-    <img src="https://visitcount.itsvg.in/api?id=SanjayJoshi116&icon=3&color=12" />
-  </a>
-</p>
-
-<p align="center">
 
 [![footer](https://capsule-render.vercel.app/api?type=waving&color=0:58A6FF,100:0D1117&height=100&section=footer)](https://github.com/SanjayJoshi116)
 
