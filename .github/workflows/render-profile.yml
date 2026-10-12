@@ -21,10 +21,11 @@ jobs:
   render:
     runs-on: ubuntu-latest
     steps:
-      # Render from latest main, not the triggering SHA, so queued runs don't start stale.
+      # Render from the branch tip, not the triggering SHA, so queued runs don't start stale.
+      # ref_name is main for push/schedule and the chosen branch for workflow_dispatch.
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-python@v5
         with:
@@ -51,6 +52,6 @@ jobs:
           # main may have moved during the run; replay on top, keeping this render's assets.
           for i in 1 2 3; do
             git push && exit 0
-            git pull --rebase -X theirs origin main
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
           done
           exit 1
