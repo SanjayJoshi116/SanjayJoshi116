@@ -32,5 +32,5 @@
 - [x] 5.3 Delete one end marker: the run fails naming it and writes nothing; restore it
 - [x] 5.4 Put a private `card.repo` value into a summary: the run fails without printing the value; revert it
 - [x] 5.5 Hide a public repo, and remove one `repos` entry: the counts and rows update, and the uncurated repo shows its API language and description; revert both *(run offline with a stubbed API: the live API returned 403 for unauthenticated calls)*
-- [ ] 5.6 Run with an unchanged config twice: the second run writes nothing *(blocked locally by the unauthenticated rate limit; check it in Actions, see 5.7)*
-- [ ] 5.7 Push on a branch, run the workflow, and review the profile in desktop light and dark and on mobile before merging
+- [x] 5.6 Run with an unchanged config twice: the second run writes nothing *(Actions runs #5 and #6 on the branch, 2026-10-12: both succeeded, no commit; branch stayed at 1d8dc08)*
+- [x] 5.7 Push on a branch, run the workflow, and review the profile in desktop light and dark and on mobile before merging *(owner reviewed the branch README on 2026-10-12)*
