@@ -38,4 +38,4 @@
 - [x] 5.1 Create a fine-grained read-only PAT scoped to the allowlisted repos' metadata; store it as a repo secret (owner action)
 - [x] 5.2 Add `.github/workflows/render-profile.yml`: daily cron, push on `data/profile.yml` or templates, and `workflow_dispatch`
 - [x] 5.3 Commit regenerated assets only when they differ from the committed ones
-- [ ] 5.4 Test: a no-op run (no commit), a tagline edit (hero updates), and a missing secret (fails, no asset changes) *(locally verified: tagline edit, missing/invalid token; the no-op commit check is deferred to the first Action run)*
+- [x] 5.4 Test: a no-op run (no commit), a tagline edit (hero updates), and a missing secret (fails, no asset changes) *(locally verified: tagline edit, missing/invalid token; no-op verified in Actions runs #3 and #4 on 2026-10-12, which made no commit)*
