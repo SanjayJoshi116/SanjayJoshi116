@@ -29,7 +29,7 @@
 
 <a name="all-projects"></a>
 <details>
-<summary><b>▸ All projects</b> (8 private · 10 public)</summary>
+<summary><b>All projects</b> (8 private · 10 public)</summary>
 
 #### 🔒 Private / in development
 

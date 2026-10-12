@@ -22,7 +22,7 @@
 - [x] 3.6 Keep the Connect shields.io badges unchanged
 - [x] 3.7 Audit all `<img src>` values: only `assets/…` or `img.shields.io`; every relative path resolves
 - [x] 3.8 Confirm every previously listed non-featured project still appears under All projects
-- [ ] 3.9 Push to a branch and review the rendered profile on desktop (light and dark) and on the GitHub mobile app before merging to main
+- [x] 3.9 Push to a branch and review the rendered profile on desktop (light and dark) and on the GitHub mobile app before merging to main *(desktop light and dark checked on github.com, branch `feat/glass-profile-readme` at 9e8aef8, 2026-10-12; mobile app checked by owner, 2026-10-12)*
 
 ## 4. Phase 2 — Data file and renderer
 
