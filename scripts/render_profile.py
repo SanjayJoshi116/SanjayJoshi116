@@ -218,22 +218,6 @@ def svg_open(w, h, title, desc, extra_css=""):
     )
 
 
-def defs(w, h, rx, panel, blur=22):
-    px, py, pw, ph, prx = panel
-    return (
-        "<defs>"
-        f'<clipPath id="frame"><rect width="{w}" height="{h}" rx="{rx}"/></clipPath>'
-        f'<clipPath id="panel"><rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="{prx}"/></clipPath>'
-        '<filter id="soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="28"/></filter>'
-        f'<filter id="frost" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="{28 + blur}"/></filter>'
-        '<filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>'
-        '<linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">'
-        '<stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/>'
-        "</linearGradient>"
-        "</defs>"
-    )
-
-
 def blobs(spec, filt, classes=None):
     out = []
     for i, (cx, cy, r, color) in enumerate(spec):
@@ -242,33 +226,55 @@ def blobs(spec, filt, classes=None):
     return f'<g filter="url(#{filt})">{"".join(out)}</g>'
 
 
-def glass(w, h, rx, panel, blob_spec, classes=None, edge=None):
-    """Ink frame + aurora blobs + frosted panel. Returns (defs+background) markup."""
-    px, py, pw, ph, prx = panel
+def glass(w, h, rx, blob_spec, classes=None, accent=(BLUE, VIOLET), edge=None, grid=False):
+    """One frosted surface: ink, blurred aurora blobs, scrim, top accent line. Returns defs+background."""
+    a1, a2 = accent
     edge_svg = ""
     if edge:
         edge_svg = (
-            f'<rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="{prx}" fill="none" stroke="{edge}" '
-            f'stroke-width="3" stroke-opacity=".7" filter="url(#glow)"/>'
-            f'<rect x="{px + .5}" y="{py + .5}" width="{pw - 1}" height="{ph - 1}" rx="{prx}" fill="none" '
-            f'stroke="{edge}" stroke-opacity=".85"/>'
+            f'<rect x="1.5" y="1.5" width="{w - 3}" height="{h - 3}" rx="{rx - 1}" fill="none" stroke="{edge}" '
+            f'stroke-width="3" stroke-opacity=".45" filter="url(#glow)"/>'
+            f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="{rx}" fill="none" '
+            f'stroke="{edge}" stroke-opacity=".7"/>'
         )
+    grid_def = grid_svg = ""
+    if grid:
+        grid_def = ('<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">'
+                    '<circle cx="1.5" cy="1.5" r="1" fill="#fff" fill-opacity=".07"/></pattern>')
+        grid_svg = f'<rect width="{w}" height="{h}" fill="url(#dots)"/>'
     return (
-        defs(w, h, rx, panel)
+        "<defs>"
+        f'<clipPath id="frame"><rect width="{w}" height="{h}" rx="{rx}"/></clipPath>'
+        '<filter id="frost" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="40"/></filter>'
+        '<filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter>'
+        '<linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">'
+        '<stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/>'
+        "</linearGradient>"
+        '<linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">'
+        f'<stop offset="0" stop-color="{a1}" stop-opacity="0"/><stop offset=".25" stop-color="{a1}"/>'
+        f'<stop offset=".75" stop-color="{a2}"/><stop offset="1" stop-color="{a2}" stop-opacity="0"/>'
+        "</linearGradient>"
+        + grid_def
+        + "</defs>"
         + '<g clip-path="url(#frame)">'
-        + f'<rect width="{w}" height="{h}" fill="{INK}"/>'
-        + blobs(blob_spec, "soft", classes)
-        + '<g clip-path="url(#panel)">'
         + f'<rect width="{w}" height="{h}" fill="{INK}"/>'
         + blobs(blob_spec, "frost", classes)
         + f'<rect width="{w}" height="{h}" fill="{INK}" fill-opacity="{SCRIM_A}"/>'
         + f'<rect width="{w}" height="{h}" fill="#fff" fill-opacity="{FROST_A}"/>'
-        + f'<rect x="{px}" y="{py}" width="{pw}" height="{ph}" fill="url(#shine)"/>'
+        + grid_svg
+        + f'<rect width="{w}" height="{h}" fill="url(#shine)"/>'
+        + f'<rect width="{w}" height="2" fill="url(#accent)"/>'
         + "</g>"
-        + f'<rect x="{px + .5}" y="{py + .5}" width="{pw - 1}" height="{ph - 1}" rx="{prx}" fill="none" '
-          f'stroke="#fff" stroke-opacity=".28"/>'
+        + f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="{rx}" fill="none" stroke="#fff" stroke-opacity=".14"/>'
         + edge_svg
-        + "</g>"
+    )
+
+
+def badge(label, color, x=36, y=44):
+    """Section label with a coloured status dot."""
+    return (
+        f'<circle cx="{x + 3.5}" cy="{y - 4}" r="3.5" fill="{color}"/>'
+        f'<text x="{x + 14}" y="{y}" font-size="11" font-weight="600" fill="{color}" letter-spacing="1.6">{label}</text>'
     )
 
 
@@ -315,20 +321,20 @@ def render_hero(cfg):
         + ".cur{animation:bl 1.1s steps(1) infinite}@keyframes bl{50%{opacity:0}}"
         "@media (prefers-reduced-motion:reduce){*{animation:none!important}}"
     )
-    spec = [(150, 60, 150, BLUE), (700, 200, 160, VIOLET), (470, 10, 110, LEAF)]
-    panel = (24, 24, w - 48, h - 48, 18)
+    spec = [(130, 40, 170, BLUE), (720, 210, 180, VIOLET), (470, -10, 120, LEAF)]
     tag_svg = "".join(
-        f'<text class="m l l{i}" x="{w / 2}" y="180" font-size="18" fill="{BLUE}" text-anchor="middle">'
+        f'<text class="m l l{i}" x="{w / 2}" y="190" font-size="17" fill="{BLUE}" text-anchor="middle">'
         f'{escape(line)}<tspan class="cur" fill-opacity=".8"> ▌</tspan></text>'
         for i, line in enumerate(lines)
     )
     return (
         svg_open(w, h, f"{cfg['name']} — {cfg['roles']}", " / ".join(lines), css)
-        + glass(w, h, 22, panel, spec, classes=["d1", "d2", "d3"])
-        + f'<text x="{w / 2}" y="104" font-size="46" font-weight="700" fill="{TEXT}" text-anchor="middle" '
-          f'letter-spacing="-.5">{escape(cfg["name"])}</text>'
-        + f'<text x="{w / 2}" y="138" font-size="17" fill="{MUTED}" text-anchor="middle" '
-          f'letter-spacing="1.5">{escape(cfg["roles"])}</text>'
+        + glass(w, h, 20, spec, classes=["d1", "d2", "d3"], accent=(BLUE, LEAF), grid=True)
+        + f'<text x="{w / 2}" y="98" font-size="48" font-weight="800" fill="{TEXT}" text-anchor="middle" '
+          f'letter-spacing="-1">{escape(cfg["name"])}</text>'
+        + f'<rect x="{w / 2 - 28}" y="116" width="56" height="3" rx="1.5" fill="url(#accent)"/>'
+        + f'<text x="{w / 2}" y="146" font-size="13" font-weight="600" fill="{MUTED}" text-anchor="middle" '
+          f'letter-spacing="3">{escape(cfg["roles"].upper())}</text>'
         + tag_svg
         + "</svg>"
     )
@@ -336,21 +342,23 @@ def render_hero(cfg):
 
 def render_card(entry, private):
     w, h = 420, 200
-    panel = (12, 12, w - 24, h - 24, 14)
     if private:
-        spec = [(60, 180, 110, VIOLET), (380, 40, 100, BLUE), (330, 200, 70, AMBER)]
-        badge, badge_color = "PRIVATE · IN DEVELOPMENT", AMBER
+        spec = [(40, 200, 120, VIOLET), (400, 20, 110, BLUE), (330, 210, 90, AMBER)]
+        label, color, accent = "PRIVATE · IN DEVELOPMENT", AMBER, (AMBER, VIOLET)
         corner = entry["version"]
     else:
-        spec = [(70, 30, 110, BLUE), (370, 180, 120, VIOLET), (260, 0, 70, LEAF)]
-        badge, badge_color = "PUBLIC REPO", BLUE
+        spec = [(50, 10, 120, BLUE), (390, 200, 130, VIOLET), (260, -10, 80, LEAF)]
+        label, color, accent = "PUBLIC REPO", BLUE, (BLUE, VIOLET)
         corner = f"★ {entry['stars']}"
     summary = wrap(entry["summary"], 13.5, w - 72, 2)
     kind = "Private project" if private else "Public repo"
     body = (
-        f'<text x="36" y="48" font-size="11" font-weight="600" fill="{badge_color}" letter-spacing="1.6">{badge}</text>'
-        f'<text x="{w - 36}" y="48" font-size="13" font-weight="600" fill="{TEXT}" text-anchor="end">{escape(corner)}</text>'
-        f'<text x="36" y="82" font-size="24" font-weight="700" fill="{TEXT}">{escape(entry["title"])}</text>'
+        badge(label, color)
+        + f'<rect x="{w - 36 - text_w(corner, 12, True) - 16:.0f}" y="28" width="{text_w(corner, 12, True) + 16:.0f}" '
+          f'height="22" rx="11" fill="#fff" fill-opacity=".08" stroke="#fff" stroke-opacity=".16"/>'
+        + f'<text x="{w - 36 - (text_w(corner, 12, True) + 16) / 2:.1f}" y="43" font-size="12" font-weight="600" '
+          f'fill="{TEXT}" text-anchor="middle">{escape(corner)}</text>'
+        + f'<text x="36" y="84" font-size="25" font-weight="800" fill="{TEXT}" letter-spacing="-.4">{escape(entry["title"])}</text>'
         + "".join(
             f'<text x="36" y="{108 + i * 19}" font-size="13.5" fill="{MUTED}">{escape(line)}</text>'
             for i, line in enumerate(summary)
@@ -359,7 +367,7 @@ def render_card(entry, private):
     )
     return (
         svg_open(w, h, f"{entry['title']} ({kind})", entry["summary"])
-        + glass(w, h, 18, panel, spec, edge=AMBER if private else None)
+        + glass(w, h, 16, spec, accent=accent, edge=AMBER if private else None)
         + body
         + "</svg>"
     )
@@ -368,57 +376,38 @@ def render_card(entry, private):
 def render_stack(cfg):
     groups = cfg["stack"]
     colors = [BLUE, LEAF, CYAN, TEXT]
-    w = 840
-    row_h, gap, pad = 52, 12, 22
-    h = pad * 2 + len(groups) * row_h + (len(groups) - 1) * gap
-    spec = [(120, 40, 160, BLUE), (720, h - 30, 170, VIOLET), (430, h / 2, 110, LEAF)]
-    # One frosted panel per row: reuse glass() for the first, add the rest as extra clip rows.
-    rows_svg, clips = [], []
+    w, row_h, pad = 840, 54, 10
+    h = pad * 2 + len(groups) * row_h
+    spec = [(100, 20, 170, BLUE), (740, h, 180, VIOLET), (430, h / 2, 120, LEAF)]
+    rows_svg = []
     for i, (label, tools) in enumerate(groups.items()):
-        y = pad + i * (row_h + gap)
-        clips.append(f'<rect x="{pad}" y="{y}" width="{w - 2 * pad}" height="{row_h}" rx="12"/>')
-        rows_svg.append(
-            f'<text x="{pad + 20}" y="{y + 31}" font-size="11.5" font-weight="700" fill="{colors[i % len(colors)]}" '
-            f'letter-spacing="1.6">{escape(label)}</text>'
-        )
-        x, max_x = pad + 140, w - pad - 14
+        y = pad + i * row_h
+        if i:
+            rows_svg.append(f'<line x1="24" y1="{y}" x2="{w - 24}" y2="{y}" stroke="#fff" stroke-opacity=".08"/>')
+        rows_svg.append(badge(escape(label), colors[i % len(colors)], x=28, y=y + 31))
+        x, max_x = 168, w - 24
         for tool in tools:
             tw = text_w(tool, 13) + 24
             if x + tw > max_x:
                 raise RenderError(f"stack row {label!r} overflows; shorten it")
             rows_svg.append(
-                f'<rect x="{x}" y="{y + 12}" width="{tw:.0f}" height="28" rx="14" fill="#fff" fill-opacity=".08" '
-                f'stroke="#fff" stroke-opacity=".2"/>'
-                f'<text x="{x + tw / 2:.1f}" y="{y + 31}" font-size="13" fill="{TEXT}" text-anchor="middle">{escape(tool)}</text>'
+                f'<rect x="{x}" y="{y + 13}" width="{tw:.0f}" height="28" rx="14" fill="#fff" fill-opacity=".07" '
+                f'stroke="#fff" stroke-opacity=".16"/>'
+                f'<text x="{x + tw / 2:.1f}" y="{y + 31.5}" font-size="13" fill="{TEXT}" text-anchor="middle">{escape(tool)}</text>'
             )
             x += tw + 8
     desc = "; ".join(f"{k}: {', '.join(v)}" for k, v in groups.items())
-    frame = (
-        "<defs>"
-        f'<clipPath id="frame"><rect width="{w}" height="{h}" rx="20"/></clipPath>'
-        f'<clipPath id="panel">{"".join(clips)}</clipPath>'
-        '<filter id="soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="28"/></filter>'
-        '<filter id="frost" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="50"/></filter>'
-        "</defs>"
-        '<g clip-path="url(#frame)">'
-        f'<rect width="{w}" height="{h}" fill="{INK}"/>'
-        + blobs(spec, "soft")
-        + '<g clip-path="url(#panel)">'
-        f'<rect width="{w}" height="{h}" fill="{INK}"/>'
-        + blobs(spec, "frost")
-        + f'<rect width="{w}" height="{h}" fill="{INK}" fill-opacity="{SCRIM_A}"/>'
-        f'<rect width="{w}" height="{h}" fill="#fff" fill-opacity="{FROST_A}"/>'
-        "</g>"
-        + "".join(c.replace("<rect ", '<rect fill="none" stroke="#fff" stroke-opacity=".26" ') for c in clips)
-        + "</g>"
+    return (
+        svg_open(w, h, "Tech stack", desc)
+        + glass(w, h, 16, spec, accent=(BLUE, VIOLET))
+        + "".join(rows_svg)
+        + "</svg>"
     )
-    return svg_open(w, h, "Tech stack", desc) + frame + "".join(rows_svg) + "</svg>"
 
 
 def render_stats(stats):
     w, h = 420, 200
-    panel = (12, 12, w - 24, h - 24, 14)
-    spec = [(60, 40, 110, BLUE), (380, 190, 110, LEAF), (250, 210, 60, VIOLET)]
+    spec = [(40, 20, 120, BLUE), (400, 200, 120, LEAF), (250, 220, 70, VIOLET)]
     tiles = [("commits", "public commits"), ("prs", "pull requests"), ("stars", "stars earned"), ("repos", "public repos")]
     tile_svg = ""
     for i, (key, label) in enumerate(tiles):
@@ -432,9 +421,9 @@ def render_stats(stats):
             f"{stats['prs']} pull requests, {stats['stars']} stars earned, {stats['repos']} public repos")
     return (
         svg_open(w, h, "GitHub activity", desc)
-        + glass(w, h, 18, panel, spec)
-        + f'<text x="36" y="48" font-size="11" font-weight="600" fill="{LEAF}" letter-spacing="1.6">GITHUB ACTIVITY</text>'
-        + f'<text x="36" y="118" font-size="48" font-weight="700" fill="{TEXT}">{fmt(stats["contributions"])}</text>'
+        + glass(w, h, 16, spec, accent=(LEAF, BLUE))
+        + badge("GITHUB ACTIVITY", LEAF)
+        + f'<text x="36" y="118" font-size="50" font-weight="800" fill="{TEXT}" letter-spacing="-1">{fmt(stats["contributions"])}</text>'
         + f'<text x="36" y="142" font-size="12.5" fill="{MUTED}">contributions</text>'
         + f'<text x="36" y="159" font-size="12.5" fill="{MUTED}">in the past year</text>'
         + f'<line x1="186" y1="70" x2="186" y2="160" stroke="#fff" stroke-opacity=".15"/>'
@@ -445,8 +434,7 @@ def render_stats(stats):
 
 def render_langs(langs, top):
     w, h = 420, 200
-    panel = (12, 12, w - 24, h - 24, 14)
-    spec = [(380, 30, 110, VIOLET), (60, 190, 110, BLUE), (220, 0, 60, LEAF)]
+    spec = [(400, 10, 120, VIOLET), (40, 210, 120, BLUE), (220, -20, 70, LEAF)]
     total = sum(langs.values())
     ranked = sorted(langs.items(), key=lambda kv: kv[1], reverse=True)
     shown = ranked[:top]
@@ -472,8 +460,8 @@ def render_langs(langs, top):
     desc = "Top languages by code size: " + ", ".join(f"{n} {f * 100:.1f}%" for n, f, _ in parts)
     return (
         svg_open(w, h, "Top languages", desc)
-        + glass(w, h, 18, panel, spec)
-        + f'<text x="36" y="48" font-size="11" font-weight="600" fill="{BLUE}" letter-spacing="1.6">TOP LANGUAGES</text>'
+        + glass(w, h, 16, spec, accent=(BLUE, CYAN))
+        + badge("TOP LANGUAGES", BLUE)
         + f'<clipPath id="bar"><rect x="{bar_x}" y="66" width="{bar_w}" height="10" rx="5"/></clipPath>'
         + f'<g clip-path="url(#bar)">{seg}</g>'
         + legend

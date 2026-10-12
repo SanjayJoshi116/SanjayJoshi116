@@ -31,11 +31,11 @@
 - [x] 4.3 Write the Python render script: read `profile.yml`, query the GitHub API for allowlisted repos only, pick the 2 most recent pushes per visibility excluding forks, and render all assets
 - [x] 4.4 Make the script write to a temp dir and replace `assets/` only after every render succeeds; on any error, exit non-zero and leave assets untouched
 - [x] 4.5 Ensure no non-allowlisted private repo name or the token appears in output, logs or commits
-- [ ] 4.6 Run the script locally and confirm the output matches the phase 1 assets *(deferred: first Action run verifies it; locally blocked by the unauthenticated API rate limit)*
+- [x] 4.6 Run the script locally and confirm the output matches the phase 1 assets *(ran unauthenticated on 2026-10-12; a second run changes 0 files. The assets now come from the renderer, including the single-surface restyle, so the hand-built phase 1 files are superseded)*
 
 ## 5. Phase 2 — Action and secret
 
-- [ ] 5.1 Create a fine-grained read-only PAT scoped to the allowlisted repos' metadata; store it as a repo secret (owner action)
+- [x] 5.1 Create a fine-grained read-only PAT scoped to the allowlisted repos' metadata; store it as a repo secret (owner action)
 - [x] 5.2 Add `.github/workflows/render-profile.yml`: daily cron, push on `data/profile.yml` or templates, and `workflow_dispatch`
 - [x] 5.3 Commit regenerated assets only when they differ from the committed ones
 - [ ] 5.4 Test: a no-op run (no commit), a tagline edit (hero updates), and a missing secret (fails, no asset changes) *(locally verified: tagline edit, missing/invalid token; the no-op commit check is deferred to the first Action run)*

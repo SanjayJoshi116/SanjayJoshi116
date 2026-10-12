@@ -13,12 +13,19 @@ Current README audit (2026-10-10): 8 private + 10 public project rows, ~50 badge
 ## Decisions
 
 ### D1: Glassmorphism, faked without `backdrop-filter`
-Layer stack inside the SVG:
-1. colour blobs (background)
-2. the same blobs with `feGaussianBlur` (~20–24px), clipped to the card shape
-3. white fill at 8–15%
-4. 1px white stroke at 25–30%, plus a top-left highlight gradient
-5. text and icons
+Each asset is one frosted surface that fills the whole image (no inner panel inside an outer frame). Layer stack, all clipped to the rounded image shape:
+1. Ink background
+2. colour blobs with `feGaussianBlur` (stdDeviation 40)
+3. Ink scrim at 74% (see Risks: the WCAG AA floor)
+4. white frost fill at 6%
+5. vertical highlight gradient over the top half (white 7% → 0)
+6. 2px gradient accent line along the top edge, fading out at both ends; its colours mark the asset (blue→violet public cards, amber→violet private cards, leaf→blue stats, blue→cyan languages, blue→leaf hero)
+7. 1px white stroke at 14%; private cards add a soft amber edge glow
+8. text and icons
+
+The hero also gets a faint dot grid (white 7%, 22px pitch). The stack is a single surface whose rows are split by 8% white divider lines, not four separate panels. Section labels carry a coloured status dot, and corner values (★ stars, version) sit in pill chips.
+
+*Changed 2026-10-12:* the first version layered a frosted inner panel over sharp blobs inside an outer frame. The blobs clipped hard at the frame edge and read as muddy coloured borders, and the box-inside-a-box framing looked busy. The 74% scrim keeps colour muted. Dropping it to 68% would push muted and blue text below 4.5:1, so muted colour is the accepted cost of AA.
 
 Renders the same in every browser. Avoid `<foreignObject>`, which is unreliable in Safari when SVG is loaded via `<img>`.
 *Rejected:* neumorphism (needs to match GitHub's page background, which differs across light, dark, dimmed and high-contrast themes; poor contrast).
