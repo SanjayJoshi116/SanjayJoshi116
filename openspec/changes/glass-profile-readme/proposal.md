@@ -4,11 +4,11 @@ The profile README is dense (18 project rows with paragraph-length cells, ~50 te
 
 ## What Changes
 
-- Replace the capsule-render header/footer and demolab typing line with a self-hosted, animated **glassmorphism hero SVG** in `assets/`.
-- Adopt the **"Aurora on Ink"** visual language: glass cards over abstract colour blobs. Glass, not neumorphism (neumorphism needs a page background GitHub doesn't let us control), with motion only in the hero.
-- Replace both project tables with **4 featured glass cards**: the 2 most recent public repos and the 2 most recent private repos. Everything else moves to a collapsed `<details>` section.
-- Cut the tech stack from ~50 badges to a **20-tool glass grid** in 4 groups.
-- Replace the Vercel/Heroku stats cards with **self-generated glass stats cards**.
+- Replace the capsule-render header/footer and demolab typing line with a self-hosted, animated **hero SVG** in `assets/`.
+- Adopt the **"Aurora on Ink"** visual language: flat dark cards with gradient accent lines, with motion only in the hero. (Glassmorphism was tried and dropped on 2026-10-12: the scrim needed for readable text left the glass looking muddy. Neumorphism was rejected because it needs a page background GitHub doesn't let us control.)
+- Replace both project tables with **4 featured cards**: the 2 most recent public repos and the 2 most recent private repos. Everything else moves to a collapsed `<details>` section.
+- Cut the tech stack from ~50 badges to a **20-tool stack card** in 4 groups.
+- Replace the Vercel/Heroku stats cards with **self-generated stats cards**.
 - Phase 2: a **GitHub Action** regenerates all SVGs from `data/profile.yml` daily and on push.
 - **Removed**: capsule-render, readme-typing-svg, github-readme-stats, streak-stats dependencies; ~30 tech badges; project-table paragraphs from the top of the page.
 
@@ -16,7 +16,7 @@ The profile README is dense (18 project rows with paragraph-length cells, ~50 te
 
 ### New Capabilities
 - `profile-readme-layout`: page structure, section order, the featured-vs-collapsed rule, and the trimmed stack
-- `glass-svg-assets`: self-hosted SVG hero/cards/grid/stats in the Aurora on Ink style, including motion and accessibility rules
+- `glass-svg-assets`: self-hosted SVG hero/cards/grid/stats in the Aurora on Ink flat-card style, including motion and accessibility rules
 - `profile-asset-generator`: GitHub Action plus script that renders the assets from `data/profile.yml` and the GitHub API, with allowlist-based recency rotation
 
 ### Modified Capabilities

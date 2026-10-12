@@ -1,6 +1,6 @@
 ## Purpose
 
-Self-hosted SVG images (hero, project cards, stack grid, stats) in the "Aurora on Ink" glassmorphism style, so the profile renders consistently under GitHub's HTML sanitizer without third-party image hosts.
+Self-hosted SVG images (hero, project cards, stack grid, stats) in the "Aurora on Ink" flat dark card style, so the profile renders consistently under GitHub's HTML sanitizer without third-party image hosts.
 
 ## ADDED Requirements
 
@@ -23,21 +23,21 @@ The repository SHALL contain these assets: `hero.svg`, one card per featured pro
 - **THEN** each one points to an existing file
 
 ### Requirement: Aurora on Ink palette
-Assets SHALL use the palette Ink `#0B1020` (background), Signal Blue `#58A6FF`, Leaf `#34D399`, and Violet `#8B5CF6` (blobs), Amber `#F5B544` (accent, reserved for private work), and text `#F0F6FC` / `#9DA7B3`.
+Assets SHALL use the palette Ink `#0F1424` (card surface), Signal Blue `#58A6FF`, Leaf `#34D399`, Violet `#8B5CF6` and Cyan `#22D3EE` (accents; Violet is never used for text), Amber `#F5B544` (reserved for private work), and text `#F0F6FC` / `#9DA7B3`.
 
 #### Scenario: Private cards marked with amber
 - **WHEN** a private project card renders
 - **THEN** it has an amber edge glow, and public cards do not use amber
 
-### Requirement: Glass effect without backdrop-filter
-Glass panels SHALL be produced from blurred copies of the background blobs clipped to the panel shape, plus a translucent white fill and a thin translucent white stroke. They MUST NOT rely on CSS `backdrop-filter`.
+### Requirement: Flat card surface
+Each asset SHALL be a flat dark card: a solid Ink surface clipped to a rounded rectangle, a gradient accent line along the top edge, and a thin translucent white border. Assets MUST NOT use blurred background blobs or CSS `backdrop-filter`.
 
 #### Scenario: Cross-browser appearance
 - **WHEN** a card is viewed via `<img>` in Chrome, Firefox, and Safari
-- **THEN** the frosted-glass appearance is visually equivalent in all three
+- **THEN** the card appearance is visually equivalent in all three
 
 ### Requirement: Motion limited to the hero
-Only `hero.svg` SHALL animate, with slow blob drift and a typing tagline. All other assets MUST be static. Each animated asset SHALL honour `prefers-reduced-motion: reduce` by stopping its animation.
+Only `hero.svg` SHALL animate, with a typing tagline. All other assets MUST be static. Each animated asset SHALL honour `prefers-reduced-motion: reduce` by stopping its animation.
 
 #### Scenario: Reduced motion
 - **WHEN** the viewer's OS has reduced motion enabled

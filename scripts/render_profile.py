@@ -1,4 +1,4 @@
-"""Render the profile README's glass SVGs from data/profile.yml and the GitHub API.
+"""Render the profile README's card SVGs from data/profile.yml and the GitHub API.
 
 Usage:
     python scripts/render_profile.py [--require-token]
@@ -30,7 +30,6 @@ README = ROOT / "README.md"
 API = "https://api.github.com"
 
 # Aurora on Ink
-INK = "#0B1020"
 BLUE = "#58A6FF"
 LEAF = "#34D399"
 VIOLET = "#8B5CF6"
@@ -40,10 +39,8 @@ TEXT = "#F0F6FC"
 MUTED = "#9DA7B3"
 LANG_COLORS = [BLUE, LEAF, VIOLET, CYAN, "#F472B6", "#C9D1D9"]
 
-# Glass recipe; check_contrast() proves text stays AA over the brightest blob.
-BLOB_A = 0.6
-SCRIM_A = 0.74
-FROST_A = 0.06
+# Card surface; check_contrast() proves every text colour stays AA on it.
+SURFACE = "#0F1424"
 
 SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"
 MONO = "ui-monospace,SFMono-Regular,Consolas,Menlo,monospace"
@@ -158,25 +155,14 @@ def _lum(hex_or_rgb):
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
-def _over(top, a, bottom):
-    t = tuple(int(top[i:i + 2], 16) for i in (1, 3, 5)) if isinstance(top, str) else top
-    b = tuple(int(bottom[i:i + 2], 16) for i in (1, 3, 5)) if isinstance(bottom, str) else bottom
-    return tuple(tc * a + bc * (1 - a) for tc, bc in zip(t, b))
-
-
 def check_contrast():
-    """Worst case: text over the un-blurred peak of the brightest blob, through the glass."""
+    """Every text colour against the flat card surface."""
     worst = {}
-    for blob in (BLUE, LEAF, VIOLET, AMBER, CYAN):
-        bg = _over(blob, BLOB_A, INK)
-        bg = _over(INK, SCRIM_A, bg)
-        bg = _over("#FFFFFF", FROST_A, bg)
-        for fg in (TEXT, MUTED, BLUE, LEAF, VIOLET, AMBER, CYAN):
-            l1, l2 = sorted((_lum(fg), _lum(bg)), reverse=True)
-            ratio = (l1 + 0.05) / (l2 + 0.05)
-            worst[fg] = min(worst.get(fg, 99), ratio)
-    # Violet is decorative only (blobs, chips); it's not used for text.
-    failing = {k: round(v, 2) for k, v in worst.items() if v < 4.5 and k != VIOLET}
+    for fg in (TEXT, MUTED, BLUE, LEAF, AMBER, CYAN):
+        l1, l2 = sorted((_lum(fg), _lum(SURFACE)), reverse=True)
+        worst[fg] = (l1 + 0.05) / (l2 + 0.05)
+    # Violet is decorative only (accent lines, language bar); it's not used for text.
+    failing = {k: round(v, 2) for k, v in worst.items() if v < 4.5}
     if failing:
         raise RenderError(f"text contrast below 4.5:1: {failing}")
     return worst
@@ -218,38 +204,26 @@ def svg_open(w, h, title, desc, extra_css=""):
     )
 
 
-def blobs(spec, filt, classes=None):
-    out = []
-    for i, (cx, cy, r, color) in enumerate(spec):
-        cls = f' class="{classes[i]}"' if classes else ""
-        out.append(f'<g{cls}><circle cx="{cx}" cy="{cy}" r="{r}" fill="{color}" fill-opacity="{BLOB_A}"/></g>')
-    return f'<g filter="url(#{filt})">{"".join(out)}</g>'
-
-
-def glass(w, h, rx, blob_spec, classes=None, accent=(BLUE, VIOLET), edge=None, grid=False):
-    """One frosted surface: ink, blurred aurora blobs, scrim, top accent line. Returns defs+background."""
+def surface(w, h, rx, accent=(BLUE, VIOLET), edge=None, grid=False):
+    """Flat dark card: solid surface, top accent line, hairline border. Returns defs+background."""
     a1, a2 = accent
     edge_svg = ""
     if edge:
         edge_svg = (
             f'<rect x="1.5" y="1.5" width="{w - 3}" height="{h - 3}" rx="{rx - 1}" fill="none" stroke="{edge}" '
-            f'stroke-width="3" stroke-opacity=".45" filter="url(#glow)"/>'
+            f'stroke-width="3" stroke-opacity=".35" filter="url(#glow)"/>'
             f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="{rx}" fill="none" '
-            f'stroke="{edge}" stroke-opacity=".7"/>'
+            f'stroke="{edge}" stroke-opacity=".6"/>'
         )
     grid_def = grid_svg = ""
     if grid:
         grid_def = ('<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">'
-                    '<circle cx="1.5" cy="1.5" r="1" fill="#fff" fill-opacity=".07"/></pattern>')
+                    '<circle cx="1.5" cy="1.5" r="1" fill="#fff" fill-opacity=".06"/></pattern>')
         grid_svg = f'<rect width="{w}" height="{h}" fill="url(#dots)"/>'
     return (
         "<defs>"
         f'<clipPath id="frame"><rect width="{w}" height="{h}" rx="{rx}"/></clipPath>'
-        '<filter id="frost" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="40"/></filter>'
         '<filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter>'
-        '<linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">'
-        '<stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/>'
-        "</linearGradient>"
         '<linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">'
         f'<stop offset="0" stop-color="{a1}" stop-opacity="0"/><stop offset=".25" stop-color="{a1}"/>'
         f'<stop offset=".75" stop-color="{a2}"/><stop offset="1" stop-color="{a2}" stop-opacity="0"/>'
@@ -257,15 +231,11 @@ def glass(w, h, rx, blob_spec, classes=None, accent=(BLUE, VIOLET), edge=None, g
         + grid_def
         + "</defs>"
         + '<g clip-path="url(#frame)">'
-        + f'<rect width="{w}" height="{h}" fill="{INK}"/>'
-        + blobs(blob_spec, "frost", classes)
-        + f'<rect width="{w}" height="{h}" fill="{INK}" fill-opacity="{SCRIM_A}"/>'
-        + f'<rect width="{w}" height="{h}" fill="#fff" fill-opacity="{FROST_A}"/>'
+        + f'<rect width="{w}" height="{h}" fill="{SURFACE}"/>'
         + grid_svg
-        + f'<rect width="{w}" height="{h}" fill="url(#shine)"/>'
         + f'<rect width="{w}" height="2" fill="url(#accent)"/>'
         + "</g>"
-        + f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="{rx}" fill="none" stroke="#fff" stroke-opacity=".14"/>'
+        + f'<rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="{rx}" fill="none" stroke="#fff" stroke-opacity=".1"/>'
         + edge_svg
     )
 
@@ -303,12 +273,6 @@ def render_hero(cfg):
     cycle = 4 * n
     pct = lambda s: f"{s / cycle * 100:.2f}%"
     css = (
-        ".d1{animation:d1 19s ease-in-out infinite alternate}"
-        ".d2{animation:d2 23s ease-in-out infinite alternate}"
-        ".d3{animation:d3 29s ease-in-out infinite alternate}"
-        "@keyframes d1{to{transform:translate(90px,26px)}}"
-        "@keyframes d2{to{transform:translate(-110px,-18px)}}"
-        "@keyframes d3{to{transform:translate(60px,-30px)}}"
         # Each line owns a 4s slot. Line 0 starts visible (complete first frame) with no
         # negative delay; the others fade in 0.5s before their slot.
         f".l{{opacity:0;animation:tl {cycle}s linear infinite}}"
@@ -321,7 +285,6 @@ def render_hero(cfg):
         + ".cur{animation:bl 1.1s steps(1) infinite}@keyframes bl{50%{opacity:0}}"
         "@media (prefers-reduced-motion:reduce){*{animation:none!important}}"
     )
-    spec = [(130, 40, 170, BLUE), (720, 210, 180, VIOLET), (470, -10, 120, LEAF)]
     tag_svg = "".join(
         f'<text class="m l l{i}" x="{w / 2}" y="190" font-size="17" fill="{BLUE}" text-anchor="middle">'
         f'{escape(line)}<tspan class="cur" fill-opacity=".8"> ▌</tspan></text>'
@@ -329,7 +292,7 @@ def render_hero(cfg):
     )
     return (
         svg_open(w, h, f"{cfg['name']} — {cfg['roles']}", " / ".join(lines), css)
-        + glass(w, h, 20, spec, classes=["d1", "d2", "d3"], accent=(BLUE, LEAF), grid=True)
+        + surface(w, h, 20, accent=(BLUE, LEAF), grid=True)
         + f'<text x="{w / 2}" y="98" font-size="48" font-weight="800" fill="{TEXT}" text-anchor="middle" '
           f'letter-spacing="-1">{escape(cfg["name"])}</text>'
         + f'<rect x="{w / 2 - 28}" y="116" width="56" height="3" rx="1.5" fill="url(#accent)"/>'
@@ -343,11 +306,9 @@ def render_hero(cfg):
 def render_card(entry, private):
     w, h = 420, 200
     if private:
-        spec = [(40, 200, 120, VIOLET), (400, 20, 110, BLUE), (330, 210, 90, AMBER)]
         label, color, accent = "PRIVATE · IN DEVELOPMENT", AMBER, (AMBER, VIOLET)
         corner = entry["version"]
     else:
-        spec = [(50, 10, 120, BLUE), (390, 200, 130, VIOLET), (260, -10, 80, LEAF)]
         label, color, accent = "PUBLIC REPO", BLUE, (BLUE, VIOLET)
         corner = f"★ {entry['stars']}"
     summary = wrap(entry["summary"], 13.5, w - 72, 2)
@@ -367,7 +328,7 @@ def render_card(entry, private):
     )
     return (
         svg_open(w, h, f"{entry['title']} ({kind})", entry["summary"])
-        + glass(w, h, 16, spec, accent=accent, edge=AMBER if private else None)
+        + surface(w, h, 16, accent=accent, edge=AMBER if private else None)
         + body
         + "</svg>"
     )
@@ -378,7 +339,6 @@ def render_stack(cfg):
     colors = [BLUE, LEAF, CYAN, TEXT]
     w, row_h, pad = 840, 54, 10
     h = pad * 2 + len(groups) * row_h
-    spec = [(100, 20, 170, BLUE), (740, h, 180, VIOLET), (430, h / 2, 120, LEAF)]
     rows_svg = []
     for i, (label, tools) in enumerate(groups.items()):
         y = pad + i * row_h
@@ -399,7 +359,7 @@ def render_stack(cfg):
     desc = "; ".join(f"{k}: {', '.join(v)}" for k, v in groups.items())
     return (
         svg_open(w, h, "Tech stack", desc)
-        + glass(w, h, 16, spec, accent=(BLUE, VIOLET))
+        + surface(w, h, 16, accent=(BLUE, VIOLET))
         + "".join(rows_svg)
         + "</svg>"
     )
@@ -407,7 +367,6 @@ def render_stack(cfg):
 
 def render_stats(stats):
     w, h = 420, 200
-    spec = [(40, 20, 120, BLUE), (400, 200, 120, LEAF), (250, 220, 70, VIOLET)]
     tiles = [("commits", "public commits"), ("prs", "pull requests"), ("stars", "stars earned"), ("repos", "public repos")]
     tile_svg = ""
     for i, (key, label) in enumerate(tiles):
@@ -421,7 +380,7 @@ def render_stats(stats):
             f"{stats['prs']} pull requests, {stats['stars']} stars earned, {stats['repos']} public repos")
     return (
         svg_open(w, h, "GitHub activity", desc)
-        + glass(w, h, 16, spec, accent=(LEAF, BLUE))
+        + surface(w, h, 16, accent=(LEAF, BLUE))
         + badge("GITHUB ACTIVITY", LEAF)
         + f'<text x="36" y="118" font-size="50" font-weight="800" fill="{TEXT}" letter-spacing="-1">{fmt(stats["contributions"])}</text>'
         + f'<text x="36" y="142" font-size="12.5" fill="{MUTED}">contributions</text>'
@@ -434,7 +393,6 @@ def render_stats(stats):
 
 def render_langs(langs, top):
     w, h = 420, 200
-    spec = [(400, 10, 120, VIOLET), (40, 210, 120, BLUE), (220, -20, 70, LEAF)]
     total = sum(langs.values())
     ranked = sorted(langs.items(), key=lambda kv: kv[1], reverse=True)
     shown = ranked[:top]
@@ -460,7 +418,7 @@ def render_langs(langs, top):
     desc = "Top languages by code size: " + ", ".join(f"{n} {f * 100:.1f}%" for n, f, _ in parts)
     return (
         svg_open(w, h, "Top languages", desc)
-        + glass(w, h, 16, spec, accent=(BLUE, CYAN))
+        + surface(w, h, 16, accent=(BLUE, CYAN))
         + badge("TOP LANGUAGES", BLUE)
         + f'<clipPath id="bar"><rect x="{bar_x}" y="66" width="{bar_w}" height="10" rx="5"/></clipPath>'
         + f'<g clip-path="url(#bar)">{seg}</g>'
