@@ -21,7 +21,10 @@ jobs:
   render:
     runs-on: ubuntu-latest
     steps:
+      # Render from latest main, not the triggering SHA, so queued runs don't start stale.
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-python@v5
         with:
@@ -45,4 +48,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Refresh profile assets"
-          git push
+          # main may have moved during the run; replay on top, keeping this render's assets.
+          for i in 1 2 3; do
+            git push && exit 0
+            git pull --rebase -X theirs origin main
+          done
+          exit 1
