@@ -5,14 +5,8 @@
 
 user: SanjayJoshi116
 name: Sanjay Joshi
-roles: Full-Stack · ML · Quant
-
-# Rotating typed line in the hero (first line is what static renderers show).
-tagline:
-  - Full-stack apps with React & Django
-  - Building ML models & data pipelines
-  - Backtesting NSE swing-trading strategies
-  - "Previously: vision systems for agriculture"
+# One plain sentence or two, shown left of the contribution chart in the hero.
+intro: Full-stack developer at Agrileaf. React and Django by day; NSE trading systems and ML on the side.
 
 featured:
   # Newest 2 by pushed_at are featured. Forks are always skipped.
@@ -39,37 +33,45 @@ projects:
   # 2 cards in file order are featured.
   private:
     - title: SwingTrade AI
-      version: v0.25
+      version: v0.41
       summary: NSE swing-trade screener with 21 setup detectors, regime detection, risk-based sizing, alerts and a 22-strategy backtester
       stack: [Django, Celery, Redis, React, TypeScript]
       card:
-        repo: ""
+        repo: SanjayJoshi116/trade
         summary: "NSE swing screener: 750+ stocks, 21 setup detectors, regime detection, backtester."
         tags: [Django, Celery, Redis, React, TypeScript]
+    - title: Contribution Finder
+      version: v0.12
+      summary: matches a developer's GitHub skills to open-source repos and issues, with an evidence-backed reason for every pick
+      stack: [Django 5, DRF, Celery, pgvector, React 19, TypeScript]
+      card:
+        repo: SanjayJoshi116/ContribFinder
+        summary: Finds open-source issues that fit your GitHub skills, and explains every match.
+        tags: [Django, Celery, pgvector, React, TypeScript]
     - title: Expense Tracker
       version: v1.7
       summary: self-hosted personal finance covering budgets, debts, investments and net worth, with 20+ planning tools
       stack: [React 19, Django 6, Celery, PostgreSQL]
       card:
-        repo: ""
+        repo: SanjayJoshi116/expense-tracker
         summary: "Self-hosted personal finance: budgets, debts, investments, net worth and 20+ planning tools."
         tags: [React 19, Django 6, Celery, PostgreSQL]
+    - title: FitTrack
+      version: v0.9
+      summary: fitness tracker with a 1,500+ movement library, workout plans, session logging and progress stats
+      stack: [Django 6, React 19, TypeScript]
+      card:
+        repo: SanjayJoshi116/exercise
+        summary: Fitness tracker with a 1,500+ movement library, workout plans, session logs and progress stats.
+        tags: [Django 6, React 19, TypeScript]
     - title: Swing-Trade Research
-      version: v0.38
+      version: v0.39
       summary: walk-forward research on systematic NSE portfolio strategies, with cost-aware LightGBM
       stack: [Python, Django, Pandas, LightGBM, PyTorch]
-      card:
-        repo: ""
-        summary: Walk-forward research platform for systematic NSE strategies with cost-aware LightGBM.
-        tags: [Python, Pandas, LightGBM, PyTorch]
     - title: NSE Signal Bot & Backtester
       with: Tilak004
       summary: Pine Script signals, a 10-year Python backtester, and a daily NSE alert bot
       stack: [Python, Pandas, Pine Script, Streamlit]
-    - title: FitTrack
-      version: v0.9
-      summary: fitness tracker on a 1,500+ exercise catalog, with plans, session logging and progress stats
-      stack: [Django 6, React 19, TypeScript]
     - title: Gym Management
       summary: two-portal gym operations covering members, plans, trainers, attendance and payments
       stack: [Django 5, DRF, React 19, PostgreSQL]
@@ -84,7 +86,7 @@ projects:
   # (except this profile repo) that isn't in `hide` is appended with its GitHub
   # language and description, so a new repo never breaks the run.
   public:
-    hide: []
+    hide: [ImageResize, Extra-Curricular-Activity-Management]
     repos:
       - repo: movie-app-v2
         label: CINE DB
@@ -119,10 +121,22 @@ projects:
         about: Image resizing assignment
 
 stack:
-  BUILD: [Python, TypeScript, React, Vite, Ant Design, Django, Node.js]
-  DATA & ML: [PostgreSQL, Redis, Celery, Pandas, scikit-learn, LightGBM, PyTorch]
-  VISION: [YOLO11, OpenCV, Raspberry Pi]
-  SHIP: [Docker, GitHub Actions, Playwright]
+  Build: [Python, TypeScript, React, Vite, Ant Design, Django, Node.js]
+  Data & ML: [PostgreSQL, Redis, Celery, Pandas, scikit-learn, LightGBM, PyTorch]
+  Vision: [YOLO11, OpenCV, Raspberry Pi]
+  Ship: [Docker, GitHub Actions, Playwright]
+
+# Connect buttons (assets/connect-*.svg). Colour marks the dot and top line only, never text.
+connect:
+  - label: LinkedIn
+    url: https://linkedin.com/in/sanjayjoshi116
+    color: "#58A6FF"
+  - label: Instagram
+    url: https://instagram.com/s_a_n_j_a_y_j_o_s_h_i_
+    color: "#F472B6"
+  - label: YouTube
+    url: https://youtube.com/@SJThinks
+    color: "#F5B544"
 
 languages:
   top: 6

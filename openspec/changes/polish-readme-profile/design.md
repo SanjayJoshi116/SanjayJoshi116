@@ -67,3 +67,14 @@ About stays outside any generated region, as the previous change decided. `**Sof
 4. Push on a branch, run the workflow there, and review in light and dark themes and on mobile before merging.
 
 Rollback: revert the commit. Shields badges come back from the reverted README.
+
+### D5. Hero: contribution chart instead of a typed tagline
+The typed tagline only ever showed its first line on static renderers, and the centred layout said little. The hero now pairs the name and a plain `intro` with the past year's contributions summed per week, drawn like a price line (the owner works on NSE trading systems, so the form is native to the subject). One motion: the line draws in once, then the area and end dot fade in. Base styles are the final frame. Daily counts come from GraphQL with a token, or from the public contributions page's tooltips without one; the total is their sum, so the chart and figure cannot disagree.
+
+*Alternative:* a photography viewfinder frame. Rejected by the owner in favour of the chart.
+
+### D6. Sentence-case labels, plain headings
+Tracked all-caps labels and emoji headings read as template chrome next to the flat cards. Labels become sentence case; headings become plain words.
+
+### D7. Languages skip hidden repos
+Hidden repos are hidden because they don't represent current work; counting their bytes put PHP and HTML on the card. They are skipped in language totals too.
