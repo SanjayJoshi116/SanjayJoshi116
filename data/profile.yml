@@ -5,14 +5,14 @@
 
 user: SanjayJoshi116
 name: Sanjay Joshi
-roles: ML · Computer Vision · Full-Stack
+roles: Full-Stack · ML · Quant
 
 # Rotating typed line in the hero (first line is what static renderers show).
 tagline:
-  - Building ML models & data pipelines
-  - Real-time vision systems for agriculture
-  - Backtesting NSE swing-trading strategies
   - Full-stack apps with React & Django
+  - Building ML models & data pipelines
+  - Backtesting NSE swing-trading strategies
+  - "Previously: vision systems for agriculture"
 
 featured:
   # Newest 2 by pushed_at are featured. Forks are always skipped.
