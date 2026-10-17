@@ -17,3 +17,19 @@ The generator SHALL regenerate the README's Activity region (stats and languages
 #### Scenario: Missing marker
 - **WHEN** the `connect` end marker is missing from the README
 - **THEN** the run fails naming the marker and writes nothing
+
+## MODIFIED Requirements
+
+### Requirement: Single data source
+All human-authored profile content used by the assets (the intro, featured allowlists, private card copy and version labels, the stack and the connect list) SHALL come from `data/profile.yml`.
+
+#### Scenario: Intro edit
+- **WHEN** the owner edits `intro` in `data/profile.yml` and pushes
+- **THEN** the regenerated `hero.svg` and the hero alt text show the new intro, with no manual edit
+
+### Requirement: Languages follow the public table
+Language totals SHALL skip hidden repos, so the languages card reflects the repos the README lists plus allowlisted private repos.
+
+#### Scenario: Hidden repo's language drops out
+- **WHEN** a PHP-only repo is in `projects.public.hide`
+- **THEN** its PHP bytes are not counted on the languages card

@@ -8,7 +8,10 @@ After `generate-readme-sections`, the README is accurate but has a few rough edg
 - The stats card's "public repos" figure counts the same repos the public table lists (non-fork, not the profile repo, not hidden), so both numbers match.
 - The renderer generates the Activity section between `activity` markers, with alt text that states the real figures (contributions, commits, PRs, stars, repos) and the top languages with their shares.
 - The Connect section becomes generated SVG buttons in `assets/` (LinkedIn, Instagram, YouTube), defined in a new `connect` list in `data/profile.yml`. **BREAKING** (layout spec): the README then loads no external images at all, and shields.io is no longer used.
-- The Agrileaf employer name in About links to `https://agrileaf.in`. About stays hand-written.
+- The Agrileaf employer name in About links to `https://agrileaf.in`. About stays hand-written, rewritten to lead with current builds.
+- Hero redesign: the centred name and typed rotating tagline become a left-aligned name and one-sentence `intro`, beside a chart of the past year's weekly contributions. `roles` and `tagline` leave `profile.yml`. The stats card drops its duplicate contributions figure.
+- Hidden repos also drop out of language totals.
+- Asset labels move to sentence case; README section headings drop emojis.
 
 ## Capabilities
 

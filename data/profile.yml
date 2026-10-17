@@ -5,14 +5,8 @@
 
 user: SanjayJoshi116
 name: Sanjay Joshi
-roles: Full-Stack · ML · Quant
-
-# Rotating typed line in the hero (first line is what static renderers show).
-tagline:
-  - Full-stack apps with React & Django
-  - Building ML models & data pipelines
-  - Backtesting NSE swing-trading strategies
-  - "Previously: vision systems for agriculture"
+# One plain sentence or two, shown left of the contribution chart in the hero.
+intro: Full-stack developer at Agrileaf. React and Django by day; NSE trading systems and ML on the side.
 
 featured:
   # Newest 2 by pushed_at are featured. Forks are always skipped.
@@ -92,7 +86,7 @@ projects:
   # (except this profile repo) that isn't in `hide` is appended with its GitHub
   # language and description, so a new repo never breaks the run.
   public:
-    hide: []
+    hide: [ImageResize, Extra-Curricular-Activity-Management]
     repos:
       - repo: movie-app-v2
         label: CINE DB
@@ -127,10 +121,22 @@ projects:
         about: Image resizing assignment
 
 stack:
-  BUILD: [Python, TypeScript, React, Vite, Ant Design, Django, Node.js]
-  DATA & ML: [PostgreSQL, Redis, Celery, Pandas, scikit-learn, LightGBM, PyTorch]
-  VISION: [YOLO11, OpenCV, Raspberry Pi]
-  SHIP: [Docker, GitHub Actions, Playwright]
+  Build: [Python, TypeScript, React, Vite, Ant Design, Django, Node.js]
+  Data & ML: [PostgreSQL, Redis, Celery, Pandas, scikit-learn, LightGBM, PyTorch]
+  Vision: [YOLO11, OpenCV, Raspberry Pi]
+  Ship: [Docker, GitHub Actions, Playwright]
+
+# Connect buttons (assets/connect-*.svg). Colour marks the dot and top line only, never text.
+connect:
+  - label: LinkedIn
+    url: https://linkedin.com/in/sanjayjoshi116
+    color: "#58A6FF"
+  - label: Instagram
+    url: https://instagram.com/s_a_n_j_a_y_j_o_s_h_i_
+    color: "#F472B6"
+  - label: YouTube
+    url: https://youtube.com/@SJThinks
+    color: "#F5B544"
 
 languages:
   top: 6

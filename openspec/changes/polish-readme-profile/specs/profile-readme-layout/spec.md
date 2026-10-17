@@ -33,3 +33,12 @@ The About section SHALL link the employer name to the employer's website.
 #### Scenario: Visitor clicks Agrileaf
 - **WHEN** a visitor clicks "Agrileaf" in the About section
 - **THEN** `https://agrileaf.in` opens
+
+## MODIFIED Requirements
+
+### Requirement: Alt text matches the images
+The hero and stack images SHALL have alt text that states the same name, intro, contribution figures and tools that the images show.
+
+#### Scenario: Screen reader on the hero
+- **WHEN** a screen reader announces the hero image
+- **THEN** it reads the name, the intro, the yearly contribution total and the weekly peak currently in the hero SVG
