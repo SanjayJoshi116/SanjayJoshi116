@@ -6,22 +6,22 @@
 user: SanjayJoshi116
 name: Sanjay Joshi
 # One plain sentence or two, shown left of the contribution chart in the hero.
-intro: Full-stack developer at Agrileaf. React and Django by day; NSE trading systems and ML on the side.
+intro: Software developer at Agrileaf. I build React and Django apps by day, and NSE trading systems and ML on the side.
 
 featured:
   # Newest 2 by pushed_at are featured. Forks are always skipped.
   public:
     - repo: movie-app-v2
       title: CINE DB
-      summary: Movie & TV tracker on TMDB with ML recommendations, watchlists and E2E tests.
+      summary: Movie & TV tracker built on TMDB, with ML recommendations, watchlists and E2E tests.
       tags: [React, TypeScript, Django, Playwright]
     - repo: movie-dash-v2
       title: MovieDash v2
-      summary: Movie analytics dashboard with poster grid, 6-tab stats, hardened Express API and themes.
+      summary: Movie analytics dashboard with a poster grid, 6 stats tabs, a hardened Express API and themes.
       tags: [React, TypeScript, Vite, Chart.js]
     - repo: tv-dash
       title: TV Dash
-      summary: Personal watch-history dashboard with 14 charts, poster grid, filters and 3 themes.
+      summary: Personal watch-history dashboard with 14 charts, a poster grid, filters and 3 themes.
       tags: [React, TypeScript, Vite, Recharts]
 
 projects:
@@ -34,27 +34,37 @@ projects:
   private:
     - title: SwingTrade AI
       version: v0.41
-      summary: NSE swing-trade screener with 21 setup detectors, regime detection, risk-based sizing, alerts and a 22-strategy backtester
+      summary: NSE swing-trade screener with 23 setup detectors, regime detection, risk-based sizing, alerts and a 24-strategy backtester
       stack: [Django, Celery, Redis, React, TypeScript]
       card:
         repo: SanjayJoshi116/trade
-        summary: "NSE swing screener: 750+ stocks, 21 setup detectors, regime detection, backtester."
+        summary: NSE swing screener for 750+ stocks, with 23 setup detectors, regime detection and a backtester.
         tags: [Django, Celery, Redis, React, TypeScript]
+      # Rendered as assets/pipeline.svg under "How SwingTrade AI works". 3-6 stages;
+      # a title must fit one line and a detail two, or the run fails. Avoid the bare
+      # word "trade": the leak check treats it as a private repo name.
+      diagram:
+        stages:
+          - {title: NSE data, detail: "752 stocks, daily"}
+          - {title: Indicators, detail: "EMA, RSI, ATR, market regime"}
+          - {title: 23 detectors, detail: "breakouts, pullbacks, reversals"}
+          - {title: Scan + score, detail: "weighted score, veto layer"}
+          - {title: Alerts, detail: "email, Telegram"}
     - title: Contribution Finder
       version: v0.12
       summary: matches a developer's GitHub skills to open-source repos and issues, with an evidence-backed reason for every pick
       stack: [Django 5, DRF, Celery, pgvector, React 19, TypeScript]
       card:
         repo: SanjayJoshi116/ContribFinder
-        summary: Finds open-source issues that fit your GitHub skills, and explains every match.
+        summary: Finds open-source issues that fit your GitHub skills and explains each match.
         tags: [Django, Celery, pgvector, React, TypeScript]
     - title: Expense Tracker
       version: v1.7
-      summary: self-hosted personal finance covering budgets, debts, investments and net worth, with 20+ planning tools
+      summary: self-hosted personal finance app covering budgets, debts, investments and net worth, with 20+ planning tools
       stack: [React 19, Django 6, Celery, PostgreSQL]
       card:
         repo: SanjayJoshi116/expense-tracker
-        summary: "Self-hosted personal finance: budgets, debts, investments, net worth and 20+ planning tools."
+        summary: Self-hosted finance app for budgets, debts, investments, net worth and 20+ planning tools.
         tags: [React 19, Django 6, Celery, PostgreSQL]
     - title: FitTrack
       version: v0.9
@@ -66,59 +76,52 @@ projects:
         tags: [Django 6, React 19, TypeScript]
     - title: Swing-Trade Research
       version: v0.39
-      summary: walk-forward research on systematic NSE portfolio strategies, with cost-aware LightGBM
+      summary: walk-forward research on systematic NSE portfolio strategies, using cost-aware LightGBM models
       stack: [Python, Django, Pandas, LightGBM, PyTorch]
     - title: NSE Signal Bot & Backtester
       with: Tilak004
-      summary: Pine Script signals, a 10-year Python backtester, and a daily NSE alert bot
+      summary: Pine Script signals, a 10-year Python backtester and a daily NSE alert bot
       stack: [Python, Pandas, Pine Script, Streamlit]
     - title: Gym Management
-      summary: two-portal gym operations covering members, plans, trainers, attendance and payments
+      summary: two-portal gym management app covering members, plans, trainers, attendance and payments
       stack: [Django 5, DRF, React 19, PostgreSQL]
     - title: Chore App
-      summary: office chore tracking and assignment
+      summary: tracks and assigns office chores
       stack: [Node.js, Express, React 19, SQLite]
     - title: Blog Platform
-      summary: personal blog with a draft and publish workflow
+      summary: personal blog with a draft-and-publish workflow
       stack: [Django 6, SQLite]
 
-  # Public table: `repos` rows first, in file order. Any other public, non-fork repo
-  # (except this profile repo) that isn't in `hide` is appended with its GitHub
-  # language and description, so a new repo never breaks the run.
+  # Public table: `repos` rows first, in file order, then `groups`. Any other
+  # public, non-fork repo (except this profile repo) that isn't in `hide` is
+  # appended with its GitHub language and description, so a new repo never
+  # breaks the run.
   public:
     hide: [ImageResize, Extra-Curricular-Activity-Management]
     repos:
       - repo: movie-app-v2
         label: CINE DB
         stack: [React, TypeScript, Django, PostgreSQL, Playwright]
-        about: Movie & TV tracker on TMDB with ML recommendations and E2E tests
+        about: Movie & TV tracker built on TMDB, with ML recommendations and E2E tests
       - repo: movie-dash-v2
         stack: [React 19, TypeScript, Vite, Chart.js]
         about: Movie analytics dashboard with a hardened Express API
       - repo: tv-dash
         stack: [React, TypeScript, Vite, Recharts]
         about: Personal watch-history dashboard with 14 charts
-      - repo: StartupSuccessPrediction
-        stack: [Python, scikit-learn]
-        about: Linear regression on startup viability by funding
-      - repo: HousePricePrediction
-        stack: [Python, scikit-learn]
-        about: Mumbai property valuation via regression
-      - repo: CricketScore
-        stack: [Python, Jupyter]
-        about: IPL / ODI / T20 first-innings score predictor
-      - repo: CustomerSegmentation
-        stack: [Python, K-Means]
-        about: Clustering 51,000 customer records
-      - repo: MachineLearningPrograms
-        stack: [Python, Jupyter]
-        about: ML algorithm implementations
       - repo: Extra-Curricular-Activity-Management
         stack: [PHP, HTML, MySQL]
         about: Extracurricular activity management web app
       - repo: ImageResize
         stack: [HTML, CSS]
         about: Image resizing assignment
+    # Each group is one table row that links every member repo. A repo may appear
+    # once only, under `repos` or in one group; members are counted individually.
+    groups:
+      - title: Early ML coursework
+        stack: [Python, scikit-learn, Jupyter]
+        about: Regression, clustering and score-prediction notebooks
+        repos: [StartupSuccessPrediction, HousePricePrediction, CricketScore, CustomerSegmentation, MachineLearningPrograms]
 
 stack:
   Build: [Python, TypeScript, React, Vite, Ant Design, Django, Node.js]
@@ -133,10 +136,10 @@ connect:
     color: "#58A6FF"
   - label: Instagram
     url: https://instagram.com/s_a_n_j_a_y_j_o_s_h_i_
-    color: "#F472B6"
+    color: "#8B5CF6"
   - label: YouTube
     url: https://youtube.com/@SJThinks
-    color: "#F5B544"
+    color: "#34D399"
 
 languages:
   top: 6

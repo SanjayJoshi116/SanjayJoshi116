@@ -7,11 +7,11 @@ Defines the structure of the GitHub profile README: section order, which project
 ## Requirements
 
 ### Requirement: Fixed section order
-The README SHALL present sections in this order: hero, About, Featured projects, All projects (collapsed), Stack, Stats, Connect.
+The README SHALL present sections in this order: hero, About, Featured projects, All projects (collapsed), Stack, Activity, Connect.
 
 #### Scenario: Visitor skims the profile
 - **WHEN** a visitor opens the profile page
-- **THEN** the hero image appears first, followed by About, Featured projects, a collapsed All projects section, the stack grid, stats, and Connect badges, in that order
+- **THEN** the hero image appears first, followed by About, Featured projects, a collapsed All projects section, the stack grid, the Activity cards, and the Connect buttons, in that order
 
 ### Requirement: About stays as text
 The About section SHALL be plain markdown of at most 4 lines and SHALL mention photography as a hobby, including editing in Lightroom.
@@ -65,12 +65,11 @@ The Stack section SHALL show exactly 20 tools in 4 groups: BUILD (Python, TypeSc
 - **THEN** none of the dropped tools (e.g. Java, PHP, Bootstrap, MySQL, Streamlit, Canva) appear in it
 
 ### Requirement: No fragile third-party image hosts
-The README MUST NOT load images from capsule-render, readme-typing-svg, github-readme-stats, streak-stats, or any other third-party card service. The Connect section SHALL keep the existing shields.io badges, which are the only externally hosted images allowed.
+The README MUST NOT load images from capsule-render, readme-typing-svg, github-readme-stats, streak-stats, shields.io, or any other third-party host. Every image, including the Connect buttons, SHALL come from `assets/`.
 
 #### Scenario: External image audit
-- **WHEN** all `<img src>` URLs in the README are listed
-- **THEN** every URL is either a relative path into `assets/` or a `img.shields.io` URL
-
+- **WHEN** all `<img src>` URLs and markdown image URLs in the README are listed
+- **THEN** every URL is a relative path into `assets/`
 ### Requirement: Accurate All projects counts
 The All projects summary SHALL show the number of private and public projects listed inside it, and the numbers MUST equal the entries actually listed.
 
@@ -83,8 +82,37 @@ The All projects summary SHALL show the number of private and public projects li
 - **THEN** none of them are listed or counted
 
 ### Requirement: Alt text matches the images
-The hero and stack images SHALL have alt text that states the same name, roles, tagline lines and tools that the images show.
+The hero and stack images SHALL have alt text that states the same name, intro, contribution figures and tools that the images show.
 
 #### Scenario: Screen reader on the hero
 - **WHEN** a screen reader announces the hero image
-- **THEN** it reads the name, roles and every tagline line currently in the hero SVG
+- **THEN** it reads the name, the intro, the yearly contribution total and the weekly peak currently in the hero SVG
+
+### Requirement: Connect buttons match the cards
+The Connect section SHALL show one button per link in the flat dark card style, each linking to its profile URL and each with alt text naming the network.
+
+#### Scenario: Visitor clicks a button
+- **WHEN** a visitor clicks the LinkedIn button
+- **THEN** the LinkedIn profile opens
+
+#### Scenario: Theme check
+- **WHEN** the Connect section is viewed in GitHub's light and dark themes
+- **THEN** each button appears as a dark panel with text contrast of at least 4.5:1
+
+#### Scenario: Accent stays on palette
+- **WHEN** a `connect` entry in `data/profile.yml` uses Amber or a colour outside Blue, Leaf, Violet and Cyan
+- **THEN** the run fails naming the entry and writes nothing
+
+### Requirement: Weak repos hidden from the public table
+Repositories listed under `hide` in `data/profile.yml` SHALL NOT appear in the All projects public table. Initially `ImageResize` and `Extra-Curricular-Activity-Management` are hidden.
+
+#### Scenario: Initial hidden set
+- **WHEN** a visitor expands All projects
+- **THEN** neither `ImageResize` nor `Extra-Curricular-Activity-Management` is listed
+
+### Requirement: Employer is linked
+The About section SHALL link the employer name to the employer's website.
+
+#### Scenario: Visitor clicks Agrileaf
+- **WHEN** a visitor clicks "Agrileaf" in the About section
+- **THEN** `https://agrileaf.in` opens

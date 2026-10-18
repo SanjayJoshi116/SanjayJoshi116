@@ -7,12 +7,11 @@ Automatically regenerates the profile SVG assets from one data file and the GitH
 ## Requirements
 
 ### Requirement: Single data source
-All human-authored profile content used by the assets (tagline lines, featured allowlists, private card copy and version labels, and the stack) SHALL come from `data/profile.yml`.
+All human-authored profile content used by the assets (the intro, featured allowlists, private card copy and version labels, the stack and the connect list) SHALL come from `data/profile.yml`.
 
-#### Scenario: Tagline edit
-- **WHEN** the owner edits a tagline line in `data/profile.yml` and pushes
-- **THEN** the regenerated `hero.svg` shows the new line, with no manual SVG edit
-
+#### Scenario: Intro edit
+- **WHEN** the owner edits `intro` in `data/profile.yml` and pushes
+- **THEN** the regenerated `hero.svg` and the hero alt text show the new intro, with no manual edit
 ### Requirement: Scheduled and push-triggered regeneration
 A GitHub Actions workflow SHALL regenerate the assets daily and on any push that changes `data/profile.yml` or the asset templates. It SHALL also be manually runnable.
 
@@ -62,9 +61,9 @@ If any API call or render step fails, the workflow SHALL keep the previously com
 ### Requirement: Generated README regions
 The generator SHALL regenerate these README regions from `data/profile.yml` and the public repository list, alongside the featured block: the hero image with its alt text, the All projects section, and the stack image with its alt text. Content outside the marked regions MUST NOT change.
 
-#### Scenario: Tagline edit reaches the alt text
-- **WHEN** the owner edits a tagline line in `data/profile.yml` and the generator runs
-- **THEN** both `hero.svg` and the hero image's alt text in the README show the new line
+#### Scenario: Intro edit reaches the alt text
+- **WHEN** the owner edits `intro` in `data/profile.yml` and the generator runs
+- **THEN** both `hero.svg` and the hero image's alt text in the README show the new intro
 
 #### Scenario: Stack edit reaches the alt text
 - **WHEN** the owner adds a tool to a `stack` group and the generator runs
@@ -72,7 +71,7 @@ The generator SHALL regenerate these README regions from `data/profile.yml` and 
 
 #### Scenario: Hand-written text untouched
 - **WHEN** the generator runs
-- **THEN** the About and Connect sections are byte-identical to their previous content
+- **THEN** the About section is byte-identical to its previous content
 
 ### Requirement: Missing region markers fail the run
 If any generated region's start or end marker is missing from the README, the generator SHALL fail and write nothing.
@@ -105,3 +104,28 @@ A public, non-fork repository other than the profile repository that has no entr
 #### Scenario: Hidden repo
 - **WHEN** a public repository is listed under `hide`
 - **THEN** it is absent from the public table and not counted
+
+### Requirement: Repo count matches the public table
+The "public repos" figure on the stats card SHALL count exactly the repositories listed in the All projects public table: public, non-fork, not the profile repository, and not hidden.
+
+#### Scenario: Profile repo and hidden repos excluded
+- **WHEN** the owner has 13 public repositories, of which 2 are forks, 1 is the profile repository and 2 are hidden
+- **THEN** the stats card shows 8 public repos and the All projects summary shows 8 public
+
+### Requirement: Generated Activity and Connect regions
+The generator SHALL regenerate the README's Activity region (stats and languages images with their alt text) and Connect region (one button per entry in the `connect` list of `data/profile.yml`). The same marker and failure rules as the other generated regions SHALL apply.
+
+#### Scenario: Connect link edit
+- **WHEN** the owner changes the YouTube URL in `data/profile.yml` and the generator runs
+- **THEN** the YouTube button links to the new URL, with no hand edit to the README
+
+#### Scenario: Missing marker
+- **WHEN** the `connect` end marker is missing from the README
+- **THEN** the run fails naming the marker and writes nothing
+
+### Requirement: Languages follow the public table
+Language totals SHALL skip hidden repos, so the languages card reflects the repos the README lists plus allowlisted private repos.
+
+#### Scenario: Hidden repo's language drops out
+- **WHEN** a PHP-only repo is in `projects.public.hide`
+- **THEN** its PHP bytes are not counted on the languages card
