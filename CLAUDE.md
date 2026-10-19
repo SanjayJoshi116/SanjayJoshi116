@@ -5,9 +5,11 @@ GitHub profile README repo for SanjayJoshi116. `README.md` renders on the profil
 ## Layout
 
 - `README.md`: profile page. Images come only from `assets/…`.
-- `assets/*.svg`: flat dark SVG cards (hero with contribution chart, featured cards, private pulse strip, system diagram, stack, stats, langs, connect buttons). **Generated; don't hand-edit.**
+- `assets/*.svg`: flat dark SVG cards (hero with contribution chart, featured cards, private pulse strip `pulse.svg`, system diagram `pipeline.svg`, stack, stats, langs, connect buttons). **Generated; don't hand-edit.**
 - `data/profile.yml`: source of truth for intro, featured allowlist, projects (private list, card copy and diagram stages, public table, `groups` and `hide`), stack, connect links, languages.
-- `scripts/render_profile.py`: reads `profile.yml` + GitHub API, renders `assets/` and the `hero`, `featured`, `pulse`, `diagram`, `projects`, `stack`, `activity` and `connect` marker regions in `README.md`. Without a token, `pulse.svg` and the `pulse` region are left as they are.
+  - `projects.private[].diagram.stages`: at most one private project has one, with 3–6 stages. Each stage title must fit on one line and its detail on two, or the render fails. It renders as `pipeline.svg` inside a collapsed "How <title> works" `<details>`.
+  - `projects.public.groups`: rows of related repos (title, stack, about, repos), shown after the plain `repos` rows. A repo listed twice across `repos` and groups fails the render. Missing or hidden members are skipped, and empty groups are omitted. The public count includes group members.
+- `scripts/render_profile.py`: reads `profile.yml` + GitHub API, renders `assets/` and the `hero`, `featured`, `pulse`, `diagram`, `projects`, `stack`, `activity` and `connect` marker regions in `README.md`. Every marker pair must exist. `pulse` (private card projects by last push) needs a token, so without one `pulse.svg` and the `pulse` region are left as they are. The diagram uses no API data, so its output is the same with or without a token.
 - `.github/workflows/render-profile.yml`: runs the renderer daily (02:17 UTC), on push to `main` touching `data/profile.yml` or the script, and on `workflow_dispatch`. Commits only when output differs.
 - `openspec/specs/`: main specs. `openspec/changes/`: active changes; `archive/` holds finished ones (e.g. the glass-profile-readme redesign).
 

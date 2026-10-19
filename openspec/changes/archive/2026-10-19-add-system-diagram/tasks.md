@@ -18,4 +18,4 @@
 - [x] 3.4 Put the bare word "trade" in a detail: the run fails naming `assets/pipeline.svg` without printing the name; revert
 - [x] 3.5 Remove the `diagram` end marker: the run fails naming it; restore
 - [x] 3.6 Run without a token: the diagram output is identical to a run with a token
-- [ ] 3.7 Update CLAUDE.md (diagram region and asset) and review on a branch in light, dark and mobile, with the details expanded
+- [x] 3.7 Update CLAUDE.md (diagram region and asset) and review on a branch in light, dark and mobile, with the details expanded

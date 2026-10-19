@@ -24,6 +24,6 @@
 - [x] 4.2 Put a card's `owner/name` into its title: the run fails, writes nothing and the error does not print the value
 - [x] 4.3 Run without a token: `pulse.svg` and the `pulse` region are byte-identical before and after
 - [x] 4.4 Duplicate `CricketScore` under `repos` and in the group: the run fails naming it; revert
-- [ ] 4.5 Full render: the table has 4 rows, the summary and stats card still show 8 public, all 5 notebook repos are linked, and `pulse.svg` has no `<script>`, no external references and no repo names
+- [x] 4.5 Full render: the table has 4 rows, the summary and stats card still show 8 public, all 5 notebook repos are linked, and `pulse.svg` has no `<script>`, no external references and no repo names
 - [x] 4.6 Remove the `pulse` end marker: the run fails naming it and writes nothing; restore it
-- [ ] 4.7 Update CLAUDE.md (pulse region, groups) and review on a branch in light, dark and mobile before merging
+- [x] 4.7 Update CLAUDE.md (pulse region, groups) and review on a branch in light, dark and mobile before merging
