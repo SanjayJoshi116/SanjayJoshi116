@@ -20,6 +20,10 @@ The Connect section SHALL show one button per link in the flat dark card style, 
 - **WHEN** the Connect section is viewed in GitHub's light and dark themes
 - **THEN** each button appears as a dark panel with text contrast of at least 4.5:1
 
+#### Scenario: Accent stays on palette
+- **WHEN** a `connect` entry in `data/profile.yml` uses Amber or a colour outside Blue, Leaf, Violet and Cyan
+- **THEN** the run fails naming the entry and writes nothing
+
 ### Requirement: Weak repos hidden from the public table
 Repositories listed under `hide` in `data/profile.yml` SHALL NOT appear in the All projects public table. Initially `ImageResize` and `Extra-Curricular-Activity-Management` are hidden.
 

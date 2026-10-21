@@ -12,12 +12,14 @@ every step succeeds, so a failed run never leaves assets half-updated.
 """
 
 import argparse
+import http.client
 import json
 import os
 import re
 import sys
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -68,6 +70,9 @@ class GitHub:
             raise RenderError(f"HTTP {e.code} from {url.split('?')[0]}") from None
         except urllib.error.URLError as e:
             raise RenderError(f"network error: {e.reason}") from None
+        except (OSError, http.client.HTTPException) as e:
+            # Read timeouts and dropped connections surface outside URLError.
+            raise RenderError(f"network error: {type(e).__name__}") from None
 
     def get(self, path, auth=True):
         return json.loads(self._request(API + path, auth=auth))
@@ -119,21 +124,46 @@ def gather(cfg, gh):
             e["pushed"] = r["pushed_at"]
             private_repos.append(e["repo"])
         private.sort(key=lambda e: e["pushed"], reverse=True)
+    # System diagram: at most one private project carries one; copy only, no API data.
+    with_diagram = [p for p in cfg["projects"]["private"] if p.get("diagram")]
+    if len(with_diagram) > 1:
+        raise RenderError("only one private project may have a diagram")
+    diagram = None
+    if with_diagram:
+        stages = with_diagram[0]["diagram"].get("stages") or []
+        if not 3 <= len(stages) <= 6:
+            raise RenderError(f"a diagram needs 3 to 6 stages, found {len(stages)}")
+        diagram = {"title": with_diagram[0]["title"], "stages": stages}
+
+    # Pulse rows: every card project, newest push first. None without a token (left untouched).
+    pulse = [{k: e[k] for k in ("title", "version", "pushed")} for e in private] if private_repos else None
 
     # All projects table: curated rows in file order, then any other public repo from the API.
     pub_cfg = cfg["projects"]["public"]
     hidden = set(pub_cfg.get("hide") or [])
+    groups = pub_cfg.get("groups") or []
+    listed = [e["repo"] for e in pub_cfg.get("repos") or []] + [n for g in groups for n in g["repos"]]
+    dup = sorted({n for n in listed if listed.count(n) > 1})
+    if dup:
+        raise RenderError(f"public repo listed more than once in data/profile.yml: {', '.join(dup)}")
     rows, seen = [], set()
     for entry in pub_cfg.get("repos") or []:
         r = repos.get(entry["repo"])
         if r and not r["fork"] and entry["repo"] not in hidden:
             rows.append({**entry, "url": r["html_url"]})
             seen.add(entry["repo"])
+    seen.update(n for g in groups for n in g["repos"])
     extra = [r for r in own if r["name"] not in seen | hidden and r["name"].lower() != user.lower()]
     for r in sorted(extra, key=lambda r: r["pushed_at"], reverse=True):
         about = (r["description"] or "").split(". ")[0].strip().rstrip(".")
         rows.append({"repo": r["name"], "url": r["html_url"], "stack": [r["language"]] if r["language"] else [],
                      "about": about if len(about) <= 100 else about[:99].rstrip() + "…"})
+    # Groups: one row each, after every individual row; missing or hidden members are skipped.
+    for g in groups:
+        members = [{"repo": n, "url": repos[n]["html_url"]} for n in g["repos"]
+                   if n in repos and not repos[n]["fork"] and n not in hidden]
+        if members:
+            rows.append({"title": g["title"], "members": members, "stack": g["stack"], "about": g["about"]})
 
     # Stats. Daily contribution counts feed the hero chart; the total is their sum.
     if gh.token:
@@ -160,7 +190,7 @@ def gather(cfg, gh):
         "commits": gh.get(f"/search/commits?q=author:{user}&per_page=1")["total_count"],
         "prs": gh.get(f"/search/issues?q=author:{user}+type:pr&per_page=1")["total_count"],
         "stars": sum(r["stargazers_count"] for r in own),
-        "repos": len(rows),
+        "repos": sum(len(r.get("members", [r])) for r in rows),
     }
 
     # Languages: listed public repos plus allowlisted private repos (aggregate only).
@@ -176,7 +206,7 @@ def gather(cfg, gh):
         raise RenderError("no language data")
 
     return {"public": public[:2], "private": private[:2], "stats": stats, "langs": totals, "days": days,
-            "rows": rows, "private_all": cfg["projects"]["private"],
+            "rows": rows, "private_all": cfg["projects"]["private"], "pulse": pulse, "diagram": diagram,
             "private_repos": [e["repo"] for e in private_cfg if e.get("repo")]}
 
 
@@ -490,6 +520,85 @@ def render_langs(langs, top):
     )
 
 
+def pulse_age(pushed, now):
+    """(days, short, long) for a pushed_at timestamp, bucketed so the strip never shows a raw date."""
+    days = max(0, (now.date() - datetime.fromisoformat(pushed).date()).days)
+    if days == 0:
+        return days, "today", "today"
+    for limit, unit, size in ((14, "d", 1), (63, "w", 7), (None, "mo", 30)):
+        if limit is None or days < limit:
+            n = days // size
+            word = {"d": "day", "w": "week", "mo": "month"}[unit]
+            return days, f"{n}{unit} ago", f"{n} {word}{'s' if n != 1 else ''} ago"
+
+
+def pulse_alt(rows, now):
+    return "Private work, last active: " + ", ".join(f"{r['title']} {pulse_age(r['pushed'], now)[2]}" for r in rows)
+
+
+def render_pulse(rows, now):
+    """One row per private card project: recency dot, title, version, relative age. No repo data."""
+    w, top, row_h = 860, 60, 30
+    h = top + row_h * len(rows) + 6
+    body = f'<text x="36" y="38" font-size="13" font-weight="600" fill="{MUTED}">Private work, last active</text>'
+    for i, r in enumerate(rows):
+        y = top + i * row_h
+        days, short, _ = pulse_age(r["pushed"], now)
+        dot = LEAF if days <= 7 else CYAN if days <= 30 else MUTED
+        title_w = text_w(r["title"], 14, True)
+        body += (
+            f'<circle cx="40.5" cy="{y - 4.5}" r="4.5" fill="{dot}"/>'
+            f'<text x="56" y="{y}" font-size="14" font-weight="600" fill="{TEXT}">{escape(r["title"])}</text>'
+            f'<text x="{56 + title_w + 10:.0f}" y="{y}" class="m" font-size="12" fill="{MUTED}">{escape(r["version"])}</text>'
+            f'<text x="{w - 36}" y="{y}" font-size="13" fill="{TEXT}" text-anchor="end">active {short}</text>'
+        )
+    return (
+        svg_open(w, h, "Private work, last active", pulse_alt(rows, now))
+        + surface(w, h, 16, accent=(AMBER, VIOLET), edge=AMBER)
+        + body
+        + "</svg>"
+    )
+
+
+def diagram_alt(diagram):
+    steps = ", then ".join(f"{s['title']} ({s['detail']})" for s in diagram["stages"])
+    return f"{diagram['title']} daily flow: {steps}"
+
+
+def render_diagram(diagram):
+    """Stage boxes in one row joined by arrows. Text that doesn't fit fails the run, never truncates."""
+    stages = diagram["stages"]
+    w, h, m, gap, top, box_h = 860, 148, 36, 24, 52, 76
+    n = len(stages)
+    bw = (w - 2 * m - gap * (n - 1)) / n
+    inner = bw - 16
+    body = f'<text x="{m}" y="34" font-size="13" font-weight="600" fill="{MUTED}">How {escape(diagram["title"])} works</text>'
+    for i, s in enumerate(stages):
+        if text_w(s["title"], 13, True) > inner:
+            raise RenderError(f"diagram stage {i + 1} title does not fit on one line")
+        detail = wrap(s["detail"], 11.5, inner, 9)
+        if len(detail) > 2:
+            raise RenderError(f"diagram stage {i + 1} detail does not fit on two lines")
+        x = m + i * (bw + gap)
+        body += (
+            f'<rect x="{x:.1f}" y="{top}" width="{bw:.1f}" height="{box_h}" rx="10" fill="#fff" fill-opacity=".04" '
+            f'stroke="#fff" stroke-opacity=".16"/>'
+            f'<text x="{x + 8:.1f}" y="{top + 24}" font-size="13" font-weight="600" fill="{TEXT}">{escape(s["title"])}</text>'
+            + "".join(f'<text x="{x + 8:.1f}" y="{top + 44 + j * 15}" font-size="11.5" fill="{MUTED}">{escape(line)}</text>'
+                      for j, line in enumerate(detail))
+        )
+        if i < n - 1:
+            ax, ay = x + bw + 4, top + box_h / 2
+            body += (f'<path d="M{ax:.1f} {ay}h{gap - 8}" stroke="{BLUE}" stroke-width="2"/>'
+                     f'<path d="M{ax + gap - 13:.1f} {ay - 4}l5 4l-5 4" fill="none" stroke="{BLUE}" stroke-width="2"/>')
+    return (
+        svg_open(w, h, f"How {diagram['title']} works", diagram_alt(diagram))
+        + surface(w, h, 16, accent=(AMBER, VIOLET), edge=AMBER)
+        + body
+        + "</svg>"
+    )
+
+
 def slug(s):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
 
@@ -498,6 +607,9 @@ def render_connect_button(entry):
     """Flat text button; the accent colour marks the dot and top line only, never text."""
     w, h = 180, 44
     label = entry["label"]
+    # Amber marks private work only; off-palette colours break the card style.
+    if entry["color"].upper() not in (BLUE, LEAF, VIOLET, CYAN):
+        raise RenderError(f"connect colour for {label!r} must be Blue, Leaf, Violet or Cyan")
     if text_w(label, 14, True) > w - 56:
         raise RenderError(f"connect label {label!r} is too long")
     return (
@@ -570,14 +682,18 @@ def projects_block(data):
         return s.replace("|", "\\|")
 
     def row(r):
-        name = f"[{r['repo']}]({r['url']})" + (f" ({r['label']})" if r.get("label") else "")
+        if "members" in r:
+            name = f"**{r['title']}**<br>" + " · ".join(f"[{m['repo']}]({m['url']})" for m in r["members"])
+        else:
+            name = f"[{r['repo']}]({r['url']})" + (f" ({r['label']})" if r.get("label") else "")
         return f"| {cell(name)} | {cell(' · '.join(r['stack']))} | {cell(r['about'])} |"
 
+    # Public count is per repository, so a group adds one per member.
     private, rows = data["private_all"], data["rows"]
     return (
         '<a name="all-projects"></a>\n'
         "<details>\n"
-        f"<summary><b>All projects</b> ({len(private)} private · {len(rows)} public)</summary>\n\n"
+        f"<summary><b>All projects</b> ({len(private)} private · {data['stats']['repos']} public)</summary>\n\n"
         "#### Private, in development\n\n"
         + "\n".join(private_line(p) for p in private)
         + "\n\n#### Public repos\n\n"
@@ -598,6 +714,22 @@ def activity_block(cfg, data):
     )
 
 
+def pulse_block(data, now):
+    alt = pulse_alt(data["pulse"], now)
+    return f'<p align="center">\n  <img src="assets/pulse.svg" width="100%" alt="{attr(alt)}">\n</p>'
+
+
+def diagram_block(data):
+    d = data["diagram"]
+    if not d:
+        return ""
+    return (
+        f"<details>\n<summary><b>How {escape(d['title'])} works</b></summary>\n\n"
+        f'<p align="center">\n  <img src="assets/pipeline.svg" width="100%" alt="{attr(diagram_alt(d))}">\n</p>\n\n'
+        "</details>"
+    )
+
+
 def connect_block(cfg):
     links = "\n".join(
         f'  <a href="{attr(e["url"])}"><img src="assets/connect-{slug(e["label"])}.svg" height="44" '
@@ -611,23 +743,27 @@ def replace_region(text, name, block):
     pattern = re.compile(rf"<!-- {name}:start.*?<!-- {name}:end -->", re.S)
     if not pattern.search(text):
         raise RenderError(f"README is missing the {name}:start/{name}:end markers")
+    if block is None:  # keep the region as it is; the markers are still required
+        return text
     marked = (f"<!-- {name}:start (generated by scripts/render_profile.py; edit data/profile.yml) -->\n"
               f"{block}\n<!-- {name}:end -->")
     return pattern.sub(lambda _: marked, text)
 
 
-def check_no_private_names(text, private_repos):
+def check_no_private_names(text, private_repos, target="README.md"):
     # Match "owner/name" anywhere, and a bare name of 5+ chars as a whole word, so short
     # common words in project copy don't trip it. Never print the value.
     low = text.lower()
     for repo in private_repos:
         name = repo.split("/")[-1].lower()
         if repo.lower() in low or (len(name) >= 5 and re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", low)):
-            raise RenderError("a private repo name would be written to README.md")
+            raise RenderError(f"a private repo name would be written to {target}")
 
 
-def render_readme(text, cfg, data):
-    for name, block in (("hero", hero_block(cfg, data)), ("featured", featured_block(data)),
+def render_readme(text, cfg, data, now):
+    pulse = pulse_block(data, now) if data["pulse"] else None
+    for name, block in (("hero", hero_block(cfg, data)), ("featured", featured_block(data)), ("pulse", pulse),
+                        ("diagram", diagram_block(data)),
                         ("projects", projects_block(data)), ("stack", stack_block(cfg)),
                         ("activity", activity_block(cfg, data)), ("connect", connect_block(cfg))):
         text = replace_region(text, name, block)
@@ -673,7 +809,16 @@ def main():
             out[ASSETS / f"card-private-{i}.svg"] = render_card(e, private=True)
         for e in cfg["connect"]:
             out[ASSETS / f"connect-{slug(e['label'])}.svg"] = render_connect_button(e)
-        out[README] = render_readme(README.read_text(encoding="utf-8"), cfg, data)
+        now = datetime.now(timezone.utc)
+        if data["pulse"]:
+            pulse_svg = render_pulse(data["pulse"], now)
+            check_no_private_names(pulse_svg, data["private_repos"], "assets/pulse.svg")
+            out[ASSETS / "pulse.svg"] = pulse_svg
+        if data["diagram"]:
+            diagram_svg = render_diagram(data["diagram"])
+            check_no_private_names(diagram_svg, data["private_repos"], "assets/pipeline.svg")
+            out[ASSETS / "pipeline.svg"] = diagram_svg
+        out[README] = render_readme(README.read_text(encoding="utf-8"), cfg, data, now)
     except RenderError as e:
         print(f"render failed, nothing written: {e}", file=sys.stderr)
         return 1

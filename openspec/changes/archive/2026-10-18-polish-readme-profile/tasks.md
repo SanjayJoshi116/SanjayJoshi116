@@ -33,8 +33,9 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Render and review the diff: the 2 hidden rows are gone, the summary and stats card both show 8 public, the alt texts state the figures, Connect is SVG buttons, and the Agrileaf link is present
-- [ ] 5.2 Audit the README: every image URL is a relative `assets/` path
-- [ ] 5.3 Open each `connect-*.svg` with the network blocked: it renders fully, with no `<script>` and no external references
-- [ ] 5.4 Change a connect URL: only that link changes; revert it
-- [ ] 5.5 Push on a branch, run the workflow, and review in light and dark themes and on mobile before merging
+- [x] 5.1 Render and review the diff: the 2 hidden rows are gone, the summary and stats card both show 8 public, the alt texts state the figures, Connect is SVG buttons, and the Agrileaf link is present
+- [x] 5.2 Audit the README: every image URL is a relative `assets/` path
+- [x] 5.3 Open each `connect-*.svg` with the network blocked: it renders fully, with no `<script>` and no external references
+- [x] 5.4 Change a connect URL: only that link changes; revert it
+- [x] 5.5 Push on a branch, run the workflow, and review in light and dark themes and on mobile before merging
+- [x] 5.6 Fix verification findings: connect accents limited to Blue, Leaf, Violet and Cyan (renderer rejects others); network timeouts fail as a render error
