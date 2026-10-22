@@ -2,7 +2,8 @@ name: Render profile
 
 on:
   schedule:
-    - cron: "17 2 * * *" # daily, 07:47 IST
+    - cron: "17 2 * * *" # daily forced render, 07:47 IST
+    - cron: "47 0-17 * * *" # hourly poll, 06:17–23:17 IST; renders only if a repo was pushed
   push:
     branches: [main]
     paths:
@@ -33,13 +34,41 @@ jobs:
 
       - run: pip install pyyaml==6.0.2
 
+      # Push-time digest saved by the last successful render. A miss counts as changed.
+      - uses: actions/cache/restore@v4
+        with:
+          path: .push-fp/last
+          key: push-fp-${{ github.run_id }}
+          restore-keys: push-fp-
+
+      # Logs are public: the fingerprint step prints nothing, and the gate prints only the verdict.
+      - run: python scripts/render_profile.py --fingerprint .push-fp/now
+        env:
+          PROFILE_TOKEN: ${{ secrets.PROFILE_TOKEN }}
+
+      - id: gate
+        run: |
+          if [ "$EVENT" = schedule ] && [ "$CRON" != "17 2 * * *" ] \
+             && [ "$(cat .push-fp/now)" != error ] && cmp -s .push-fp/now .push-fp/last; then
+            echo "unchanged"
+            echo "render=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed"
+            echo "render=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          EVENT: ${{ github.event_name }}
+          CRON: ${{ github.event.schedule }}
+
       # Fails (and writes nothing) if the token is missing/invalid or any API call fails.
-      - run: python scripts/render_profile.py --require-token
+      - if: steps.gate.outputs.render == 'true'
+        run: python scripts/render_profile.py --require-token
         env:
           PROFILE_TOKEN: ${{ secrets.PROFILE_TOKEN }}
 
       # Pushes made with GITHUB_TOKEN don't trigger workflows, so this can't loop.
       - name: Commit if changed
+        if: steps.gate.outputs.render == 'true'
         run: |
           git add assets README.md
           if git diff --cached --quiet; then
@@ -55,3 +84,20 @@ jobs:
             git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
           done
           exit 1
+
+      # Saved only after a successful render, so a failed one is retried on the next poll.
+      - id: keep
+        if: steps.gate.outputs.render == 'true'
+        run: |
+          if [ "$(cat .push-fp/now)" = error ]; then
+            echo "save=false" >> "$GITHUB_OUTPUT"
+          else
+            cp .push-fp/now .push-fp/last
+            echo "save=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.keep.outputs.save == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .push-fp/last
+          key: push-fp-${{ github.run_id }}

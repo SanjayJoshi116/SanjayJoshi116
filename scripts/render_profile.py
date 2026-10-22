@@ -2,6 +2,7 @@
 
 Usage:
     python scripts/render_profile.py [--require-token]
+    python scripts/render_profile.py --fingerprint PATH
 
 Env:
     PROFILE_TOKEN  optional fine-grained read-only PAT. Enables private-repo
@@ -12,6 +13,7 @@ every step succeeds, so a failed run never leaves assets half-updated.
 """
 
 import argparse
+import hashlib
 import http.client
 import json
 import os
@@ -771,15 +773,47 @@ def render_readme(text, cfg, data, now):
     return text
 
 
+# ---------------------------------------------------------------- push fingerprint
+
+def fingerprint(path, token):
+    """Write a digest of push times for public repos and private card repos to `path`.
+
+    CI logs are public, so this prints nothing: no names, times or digest. Any
+    failure writes "error", which never matches a saved digest, so the render runs
+    and reports the problem with its own messages.
+    """
+    try:
+        cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+        gh = GitHub(token)
+        repos = gh.get(f"/users/{cfg['user']}/repos?per_page=100&type=owner", auth=False)
+        items = sorted(f"{r['name']}\t{r['pushed_at']}" for r in repos if not r["fork"])
+        if token:
+            # Private repos in file order, by push time only.
+            for p in cfg["projects"]["private"]:
+                repo = (p.get("card") or {}).get("repo")
+                if repo:
+                    items.append(gh.get(f"/repos/{repo}")["pushed_at"])
+        digest = hashlib.sha256("\n".join(items).encode()).hexdigest()
+    except Exception:
+        digest = "error"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(digest + "\n", encoding="utf-8")
+    return 0
+
+
 # ---------------------------------------------------------------- main
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--require-token", action="store_true",
                     help="fail unless PROFILE_TOKEN is set and valid (used in CI)")
+    ap.add_argument("--fingerprint", type=Path, metavar="PATH",
+                    help="write a push-time digest to PATH and exit; renders nothing")
     args = ap.parse_args()
 
     token = os.environ.get("PROFILE_TOKEN") or None
+    if args.fingerprint:
+        return fingerprint(args.fingerprint, token)
     gh = GitHub(token)
     try:
         if args.require_token:
