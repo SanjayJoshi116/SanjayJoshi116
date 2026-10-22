@@ -7,6 +7,7 @@ venv/
 # Local renderer output / scratch
 *.tmp
 .env
+.push-fp/
 
 # Claude Code per-user settings
 .claude/settings.local.json
