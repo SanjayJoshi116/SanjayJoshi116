@@ -21,7 +21,8 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from collections import Counter
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -32,6 +33,8 @@ CONFIG = ROOT / "data" / "profile.yml"
 ASSETS = ROOT / "assets"
 README = ROOT / "README.md"
 API = "https://api.github.com"
+# Pulse ages count calendar days here, matching the IST schedule in render-profile.yml (no DST).
+IST = timezone(timedelta(hours=5, minutes=30))
 
 # Aurora on Ink
 BLUE = "#58A6FF"
@@ -90,6 +93,20 @@ class GitHub:
         return self._request(url, auth=False, accept="text/html")
 
 
+def card_repos(cfg):
+    """Private card repos in file order; empty unless every card names one, since rotation needs them all."""
+    repos = [(p["card"] or {}).get("repo") for p in cfg["projects"]["private"] if "card" in p]
+    return repos if repos and all(repos) else []
+
+
+def watched_public(cfg, repos):
+    """Public repos whose pushes can change the render: not forks, not hidden (unless featured),
+    and not the profile repo, whose own asset commits would otherwise re-trigger every poll."""
+    user = cfg["user"].lower()
+    hidden = set(cfg["projects"]["public"].get("hide") or []) - {e["repo"] for e in cfg["featured"]["public"]}
+    return [r for r in repos if not r["fork"] and r["name"] not in hidden and r["name"].lower() != user]
+
+
 def gather(cfg, gh):
     user = cfg["user"]
     # Public endpoint without auth: never returns private repos, even with a token.
@@ -117,7 +134,7 @@ def gather(cfg, gh):
         raise RenderError("fewer than 2 private projects have a card")
     private = [dict(e) for e in private_cfg]
     private_repos = []
-    if gh.token and all(e.get("repo") for e in private_cfg):
+    if gh.token and card_repos(cfg):
         for i, e in enumerate(private):
             try:
                 r = gh.get(f"/repos/{e['repo']}")
@@ -135,17 +152,28 @@ def gather(cfg, gh):
         stages = with_diagram[0]["diagram"].get("stages") or []
         if not 3 <= len(stages) <= 6:
             raise RenderError(f"a diagram needs 3 to 6 stages, found {len(stages)}")
+        for i, s in enumerate(stages):
+            if not (isinstance(s, dict) and s.get("title") and s.get("detail")):
+                raise RenderError(f"diagram stage {i + 1} needs a title and a detail")
         diagram = {"title": with_diagram[0]["title"], "stages": stages}
 
-    # Pulse rows: every card project, newest push first. None without a token (left untouched).
-    pulse = [{k: e[k] for k in ("title", "version", "pushed")} for e in private] if private_repos else None
+    # Pulse rows: every card project, newest push first. None without a token (left untouched);
+    # empty with a token but no card repos (region and pulse.svg removed).
+    if private_repos:
+        pulse = [{k: e[k] for k in ("title", "version", "pushed")} for e in private]
+    else:
+        pulse = [] if gh.token else None
 
     # All projects table: curated rows in file order, then any other public repo from the API.
     pub_cfg = cfg["projects"]["public"]
     hidden = set(pub_cfg.get("hide") or [])
     groups = pub_cfg.get("groups") or []
+    for i, g in enumerate(groups):
+        missing = [k for k in ("title", "stack", "about", "repos") if not g.get(k)]
+        if missing:
+            raise RenderError(f"public group #{i + 1} is missing {', '.join(missing)}")
     listed = [e["repo"] for e in pub_cfg.get("repos") or []] + [n for g in groups for n in g["repos"]]
-    dup = sorted({n for n in listed if listed.count(n) > 1})
+    dup = sorted(n for n, c in Counter(listed).items() if c > 1)
     if dup:
         raise RenderError(f"public repo listed more than once in data/profile.yml: {', '.join(dup)}")
     rows, seen = [], set()
@@ -155,7 +183,8 @@ def gather(cfg, gh):
             rows.append({**entry, "url": r["html_url"]})
             seen.add(entry["repo"])
     seen.update(n for g in groups for n in g["repos"])
-    extra = [r for r in own if r["name"] not in seen | hidden and r["name"].lower() != user.lower()]
+    # Same filter the poll watches, so a repo shown here is one whose pushes trigger a render.
+    extra = [r for r in watched_public(cfg, own) if r["name"] not in seen | hidden]
     for r in sorted(extra, key=lambda r: r["pushed_at"], reverse=True):
         about = (r["description"] or "").split(". ")[0].strip().rstrip(".")
         rows.append({"repo": r["name"], "url": r["html_url"], "stack": [r["language"]] if r["language"] else [],
@@ -249,6 +278,8 @@ def wrap(s, size, max_w, max_lines):
         trial = f"{cur} {w}".strip()
         if text_w(trial, size, avg=0.52) <= max_w:
             cur = trial
+        elif text_w(w, size, avg=0.52) > max_w:
+            raise RenderError(f"the word {w!r} is too wide for its text box; shorten it")
         else:
             lines.append(cur)
             cur = w
@@ -524,7 +555,9 @@ def render_langs(langs, top):
 
 def pulse_age(pushed, now):
     """(days, short, long) for a pushed_at timestamp, bucketed so the strip never shows a raw date."""
-    days = max(0, (now.date() - datetime.fromisoformat(pushed).date()).days)
+    # Python < 3.11 can't parse a trailing "Z"; `now` is IST, so days are IST calendar days.
+    pushed_at = datetime.fromisoformat(pushed.replace("Z", "+00:00")).astimezone(now.tzinfo)
+    days = max(0, (now.date() - pushed_at.date()).days)
     if days == 0:
         return days, "today", "today"
     for limit, unit, size in ((14, "d", 1), (63, "w", 7), (None, "mo", 30)):
@@ -543,15 +576,19 @@ def render_pulse(rows, now):
     w, top, row_h = 860, 60, 30
     h = top + row_h * len(rows) + 6
     body = f'<text x="36" y="38" font-size="13" font-weight="600" fill="{MUTED}">Private work, last active</text>'
+    # Reserve room for the widest age label, so copy that fits today can't start overlapping as ages grow.
+    age_left = w - 36 - text_w("active 99mo ago", 13)
     for i, r in enumerate(rows):
         y = top + i * row_h
         days, short, _ = pulse_age(r["pushed"], now)
         dot = LEAF if days <= 7 else CYAN if days <= 30 else MUTED
-        title_w = text_w(r["title"], 14, True)
+        version_x = 56 + text_w(r["title"], 14, True) + 10
+        if version_x + text_w(r["version"], 12, avg=0.6) + 16 > age_left:
+            raise RenderError(f"pulse row {i + 1} title and version are too long; shorten them")
         body += (
             f'<circle cx="40.5" cy="{y - 4.5}" r="4.5" fill="{dot}"/>'
             f'<text x="56" y="{y}" font-size="14" font-weight="600" fill="{TEXT}">{escape(r["title"])}</text>'
-            f'<text x="{56 + title_w + 10:.0f}" y="{y}" class="m" font-size="12" fill="{MUTED}">{escape(r["version"])}</text>'
+            f'<text x="{version_x:.0f}" y="{y}" class="m" font-size="12" fill="{MUTED}">{escape(r["version"])}</text>'
             f'<text x="{w - 36}" y="{y}" font-size="13" fill="{TEXT}" text-anchor="end">active {short}</text>'
         )
     return (
@@ -717,6 +754,8 @@ def activity_block(cfg, data):
 
 
 def pulse_block(data, now):
+    if not data["pulse"]:
+        return ""
     alt = pulse_alt(data["pulse"], now)
     return f'<p align="center">\n  <img src="assets/pulse.svg" width="100%" alt="{attr(alt)}">\n</p>'
 
@@ -763,7 +802,7 @@ def check_no_private_names(text, private_repos, target="README.md"):
 
 
 def render_readme(text, cfg, data, now):
-    pulse = pulse_block(data, now) if data["pulse"] else None
+    pulse = None if data["pulse"] is None else pulse_block(data, now)
     for name, block in (("hero", hero_block(cfg, data)), ("featured", featured_block(data)), ("pulse", pulse),
                         ("diagram", diagram_block(data)),
                         ("projects", projects_block(data)), ("stack", stack_block(cfg)),
@@ -776,23 +815,23 @@ def render_readme(text, cfg, data, now):
 # ---------------------------------------------------------------- push fingerprint
 
 def fingerprint(path, token):
-    """Write a digest of push times for public repos and private card repos to `path`.
+    """Write a digest of push times for watched repos, plus today's IST date, to `path`.
 
-    CI logs are public, so this prints nothing: no names, times or digest. Any
-    failure writes "error", which never matches a saved digest, so the render runs
-    and reports the problem with its own messages.
+    The date makes the first poll of each day re-render, so pulse ages move on daily
+    even when GitHub delays the daily cron. CI logs are public, so this prints
+    nothing: no names, times or digest. Any failure writes "error", which never
+    matches a saved digest, so the render runs and reports the problem itself.
     """
     try:
         cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
         gh = GitHub(token)
         repos = gh.get(f"/users/{cfg['user']}/repos?per_page=100&type=owner", auth=False)
-        items = sorted(f"{r['name']}\t{r['pushed_at']}" for r in repos if not r["fork"])
+        items = sorted(f"{r['name']}\t{r['pushed_at']}" for r in watched_public(cfg, repos))
+        items.append(datetime.now(IST).date().isoformat())
         if token:
             # Private repos in file order, by push time only.
-            for p in cfg["projects"]["private"]:
-                repo = (p.get("card") or {}).get("repo")
-                if repo:
-                    items.append(gh.get(f"/repos/{repo}")["pushed_at"])
+            for repo in card_repos(cfg):
+                items.append(gh.get(f"/repos/{repo}")["pushed_at"])
         digest = hashlib.sha256("\n".join(items).encode()).hexdigest()
     except Exception:
         digest = "error"
@@ -843,15 +882,19 @@ def main():
             out[ASSETS / f"card-private-{i}.svg"] = render_card(e, private=True)
         for e in cfg["connect"]:
             out[ASSETS / f"connect-{slug(e['label'])}.svg"] = render_connect_button(e)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(IST)
         if data["pulse"]:
             pulse_svg = render_pulse(data["pulse"], now)
             check_no_private_names(pulse_svg, data["private_repos"], "assets/pulse.svg")
             out[ASSETS / "pulse.svg"] = pulse_svg
+        elif data["pulse"] is not None:
+            out[ASSETS / "pulse.svg"] = None  # None means delete: its README region is now empty
         if data["diagram"]:
             diagram_svg = render_diagram(data["diagram"])
             check_no_private_names(diagram_svg, data["private_repos"], "assets/pipeline.svg")
             out[ASSETS / "pipeline.svg"] = diagram_svg
+        else:
+            out[ASSETS / "pipeline.svg"] = None
         out[README] = render_readme(README.read_text(encoding="utf-8"), cfg, data, now)
     except RenderError as e:
         print(f"render failed, nothing written: {e}", file=sys.stderr)
@@ -860,6 +903,12 @@ def main():
     ASSETS.mkdir(exist_ok=True)
     changed = 0
     for path, content in out.items():
+        if content is None:
+            if path.exists():
+                path.unlink()
+                changed += 1
+                print(f"removed {path.relative_to(ROOT)}")
+            continue
         content = content if content.endswith("\n") else content + "\n"
         if not path.exists() or path.read_text(encoding="utf-8") != content:
             path.write_text(content, encoding="utf-8", newline="\n")

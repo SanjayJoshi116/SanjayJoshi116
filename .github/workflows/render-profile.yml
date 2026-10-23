@@ -3,7 +3,7 @@ name: Render profile
 on:
   schedule:
     - cron: "17 2 * * *" # daily forced render, 07:47 IST
-    - cron: "47 0-17 * * *" # hourly poll, 06:17–23:17 IST; renders only if a repo was pushed
+    - cron: "47 0-17 * * *" # hourly poll, 06:17–23:17 IST; renders only if a repo was pushed or the IST day changed
   push:
     branches: [main]
     paths:

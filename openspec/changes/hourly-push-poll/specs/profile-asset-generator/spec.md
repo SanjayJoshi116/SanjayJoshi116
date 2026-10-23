@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Scheduled and push-triggered regeneration
-A GitHub Actions workflow SHALL regenerate the assets daily and on any push that changes `data/profile.yml` or the asset templates. It SHALL also be manually runnable. In addition, it SHALL poll hourly between 06:17 and 23:17 IST and regenerate only when a repository's last push time has changed since the last successful render. The polled set SHALL be the owner's public repositories and the private repositories named in `projects.private[].card.repo`, and no other private repository. The daily, push and manual runs SHALL regenerate regardless of the poll result.
+A GitHub Actions workflow SHALL regenerate the assets daily and on any push that changes `data/profile.yml` or the asset templates. It SHALL also be manually runnable. In addition, it SHALL poll hourly between 06:17 and 23:17 IST and regenerate only when a repository's last push time has changed since the last successful render. The polled set SHALL be the owner's public repositories, except hidden ones and the profile repository itself, and the private repositories named in `projects.private[].card.repo`, and no other private repository. The first poll of each IST calendar day SHALL regenerate, so relative ages stay current. The daily, push and manual runs SHALL regenerate regardless of the poll result.
 
 #### Scenario: Daily refresh
 - **WHEN** the daily schedule fires
@@ -14,6 +14,14 @@ A GitHub Actions workflow SHALL regenerate the assets daily and on any push that
 #### Scenario: Nothing pushed since the last render
 - **WHEN** an hourly poll fires and no polled repository has a newer push time than at the last successful render
 - **THEN** the run ends without rendering or committing
+
+#### Scenario: Asset commit does not re-trigger
+- **WHEN** a render commits refreshed assets to the profile repository and nothing else is pushed
+- **THEN** the next poll in the same IST day ends without rendering
+
+#### Scenario: New day
+- **WHEN** the first poll of an IST calendar day fires
+- **THEN** it regenerates the assets even if no repository was pushed
 
 #### Scenario: Night hours
 - **WHEN** a watched repository is pushed at 23:40 IST
