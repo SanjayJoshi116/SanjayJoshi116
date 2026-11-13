@@ -1,6 +1,6 @@
 ## 1. Renderer fingerprint mode
 
-- [x] 1.1 Add `--fingerprint PATH` to `scripts/render_profile.py`: load config, build the `GitHub` client, collect sorted `(name, pushed_at)` for non-fork repos from the unauthenticated `/users/{user}/repos` call and `pushed_at` for each `projects.private[].card.repo` via the token, write the SHA-256 hex digest to PATH, print nothing, exit 0
+- [x] 1.1 Add `--fingerprint PATH` to `scripts/render_profile.py`: load config, build the `GitHub` client, collect sorted `(name, pushed_at)` for non-fork repos from the public repo listing (`public_repos()`, public-only server side) and `pushed_at` for each `projects.private[].card.repo` via the token, write the SHA-256 hex digest to PATH, print nothing, exit 0
 - [x] 1.2 On any error in fingerprint mode, write `error` to PATH with no output and exit 0
 - [x] 1.3 Run locally with and without a token: confirm a stable digest across two runs, no stdout/stderr, and no README/asset changes
 

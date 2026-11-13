@@ -107,10 +107,53 @@ def watched_public(cfg, repos):
     return [r for r in repos if not r["fork"] and r["name"] not in hidden and r["name"].lower() != user]
 
 
+PUBLIC_REPOS_QUERY = """{ user(login: %s) { repositories(first: 100, after: %s, privacy: PUBLIC,
+  ownerAffiliations: [OWNER]) { pageInfo { hasNextPage endCursor } nodes { name isFork isPrivate
+  stargazerCount pushedAt createdAt url description primaryLanguage { name } } } } }"""
+
+
+def public_repos(gh, user):
+    """Every public repo the user owns, in the REST repo shape gather() reads.
+
+    With a token: GraphQL with privacy: PUBLIC, so GitHub filters server side and no
+    private repo is ever returned (never enumerate them), while the calls count against
+    the token's limit instead of the shared runner IP's 60/hr. Without a token, or if
+    GitHub rejects it (HTTP 401), the unauthenticated REST listing, which only ever
+    returns public repos. Both paths page through everything; the isPrivate/private
+    check is a second guard, not the filter.
+    """
+    if gh.token:
+        try:
+            repos, cursor = [], None
+            while True:
+                q = PUBLIC_REPOS_QUERY % (json.dumps(user), json.dumps(cursor))
+                page = gh.graphql(q)["user"]["repositories"]
+                for n in page["nodes"]:
+                    if n["isPrivate"]:
+                        continue
+                    repos.append({"name": n["name"], "fork": n["isFork"], "private": False,
+                                  "stargazers_count": n["stargazerCount"],
+                                  "pushed_at": n["pushedAt"] or n["createdAt"], "html_url": n["url"],
+                                  "description": n["description"],
+                                  "language": (n["primaryLanguage"] or {}).get("name")})
+                if not page["pageInfo"]["hasNextPage"]:
+                    return repos
+                cursor = page["pageInfo"]["endCursor"]
+        except RenderError as e:
+            if not str(e).startswith("HTTP 401"):
+                raise
+    repos, n = [], 1
+    while True:
+        batch = gh.get(f"/users/{user}/repos?per_page=100&type=owner&page={n}", auth=False)
+        repos += [r for r in batch if not r.get("private", True)]
+        if len(batch) < 100:
+            return repos
+        n += 1
+
+
 def gather(cfg, gh):
     user = cfg["user"]
-    # Public endpoint without auth: never returns private repos, even with a token.
-    repos = {r["name"]: r for r in gh.get(f"/users/{user}/repos?per_page=100&type=owner", auth=False)}
+    repos = {r["name"]: r for r in public_repos(gh, user)}
     own = [r for r in repos.values() if not r["fork"]]
 
     public = []
@@ -825,7 +868,7 @@ def fingerprint(path, token):
     try:
         cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
         gh = GitHub(token)
-        repos = gh.get(f"/users/{cfg['user']}/repos?per_page=100&type=owner", auth=False)
+        repos = public_repos(gh, cfg["user"])
         items = sorted(f"{r['name']}\t{r['pushed_at']}" for r in watched_public(cfg, repos))
         items.append(datetime.now(IST).date().isoformat())
         if token:

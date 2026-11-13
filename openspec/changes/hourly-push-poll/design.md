@@ -22,7 +22,7 @@ Alternative: one hourly cron with a forced render at a chosen hour. Rejected: tw
 
 ### Fingerprint mode in the renderer
 `render_profile.py --fingerprint PATH` loads `profile.yml`, uses the existing `GitHub` client, and writes a SHA-256 hex digest to `PATH`. It prints nothing and exits 0. Input, sorted:
-- `(name, pushed_at)` for each non-fork repo from the unauthenticated `/users/{user}/repos` call `gather` already makes. That includes repos not yet in `profile.yml`, so a new public repo triggers a render. It skips repos in `projects.public.hide` (unless featured) and the profile repo itself, whose own asset commits would otherwise make the next poll render again.
+- `(name, pushed_at)` for each non-fork repo from the public repo listing `gather` already makes (`public_repos()`: GraphQL `repositories(privacy: PUBLIC)` with the token, so GitHub filters private repos out server side; the unauthenticated `/users/{user}/repos` call without a token or when the token is rejected; all pages either way). That includes repos not yet in `profile.yml`, so a new public repo triggers a render. It skips repos in `projects.public.hide` (unless featured) and the profile repo itself, whose own asset commits would otherwise make the next poll render again.
 - Today's IST date, so the first poll of each day renders and pulse ages move on even when GitHub runs the daily cron hours late.
 - `pushed_at` for each `projects.private[].card.repo`, via `/repos/{repo}` with the token, only when every card names a repo (the same rule `gather` uses, shared through `card_repos()`).
 
