@@ -44,7 +44,7 @@
 - [x] 8.1 Harness run with and without a token: home page sections in order, Now present only with a token, case pages and their `og.png` written, no SVG files in `site/`, README and `assets/` unchanged
 - [x] 8.2 Failure cases write nothing: bad `case` block, duplicate slug, too-wide project title in a preview image, private name in a case block
 - [x] 8.3 Open `site/index.html` and a case page from disk: links between pages work, no request leaves the machine, no horizontal scroll at 360 px
-- [ ] 8.4 Branch run: review the `site-preview` artifact in desktop light, desktop dark, mobile and print preview; check a case-study link in a link previewer after merge
+- [x] 8.4 Branch run: review the `site-preview` artifact in desktop light, desktop dark, mobile and print preview; check a case-study link in a link previewer after merge (The change went to `main` directly, so there was no branch run; verified instead with headless Edge screenshots in light, dark and mobile, a one-page print in Letter and A4, and on the live site.)
 
 ## 9. Docs
 

@@ -18,4 +18,4 @@
 
 - [x] 4.1 Harness with stubbed contents responses: auto-detect order, explicit path, `manual`, missing file, 403, invalid value (not printed), no token (no requests); README, pulse and site show the same label
 - [x] 4.2 Check that no error message or log line contains a repo name or file content, including for the 403 and invalid-value cases
-- [ ] 4.3 Branch dispatch with the updated token: cards, pulse strip, All projects and `site-preview` show the repos' versions; then merge
+- [x] 4.3 Branch dispatch with the updated token: cards, pulse strip, All projects and `site-preview` show the repos' versions; then merge
