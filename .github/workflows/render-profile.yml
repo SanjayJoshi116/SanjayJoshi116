@@ -21,6 +21,9 @@ concurrency:
 jobs:
   render:
     runs-on: ubuntu-latest
+    outputs:
+      rendered: ${{ steps.gate.outputs.render }}
+      keep: ${{ steps.keep.outputs.save }}
     steps:
       # Render from the branch tip, not the triggering SHA, so queued runs don't start stale.
       # ref_name is main for push/schedule and the chosen branch for workflow_dispatch.
@@ -60,11 +63,33 @@ jobs:
           EVENT: ${{ github.event_name }}
           CRON: ${{ github.event.schedule }}
 
+      # Site deps only when rendering, so skipped polls stay quick. og.png is drawn with
+      # DejaVu Sans, normally preinstalled on the runner.
+      - if: steps.gate.outputs.render == 'true'
+        run: |
+          pip install pillow==13.0.0
+          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf \
+            || { sudo apt-get update -q && sudo apt-get install -y -q fonts-dejavu-core; }
+
       # Fails (and writes nothing) if the token is missing/invalid or any API call fails.
       - if: steps.gate.outputs.render == 'true'
-        run: python scripts/render_profile.py --require-token
+        run: python scripts/render_profile.py --require-token --site
         env:
           PROFILE_TOKEN: ${{ secrets.PROFILE_TOKEN }}
+
+      # site/ is gitignored build output: main publishes it to Pages (deploy job below),
+      # other branches get it as a downloadable artifact for review.
+      - if: steps.gate.outputs.render == 'true' && github.ref_name == 'main'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - if: steps.gate.outputs.render == 'true' && github.ref_name != 'main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-preview
+          path: site
+          retention-days: 7
 
       # Pushes made with GITHUB_TOKEN don't trigger workflows, so this can't loop.
       - name: Commit if changed
@@ -85,7 +110,8 @@ jobs:
           done
           exit 1
 
-      # Saved only after a successful render, so a failed one is retried on the next poll.
+      # Staged only after a successful render, so a failed one is retried on the next poll. The
+      # remember job below promotes it once the deploy (main) has succeeded too.
       - id: keep
         if: steps.gate.outputs.render == 'true'
         run: |
@@ -96,8 +122,45 @@ jobs:
             echo "save=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Staged under its own prefix, which the restore-keys above never match.
       - if: steps.keep.outputs.save == 'true'
         uses: actions/cache/save@v4
+        with:
+          path: .push-fp/last
+          key: staged-fp-${{ github.run_id }}
+
+  # Runs only after a successful render on main; a skipped poll or failed render leaves the live site as it is.
+  deploy:
+    needs: render
+    if: needs.render.outputs.rendered == 'true' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5
+
+  # Makes this render's fingerprint the one polls compare against, only once the site is live
+  # (main) or the render succeeded (other branches, no deploy). A failed deploy leaves the old
+  # fingerprint, so the next poll renders and deploys again.
+  remember:
+    needs: [render, deploy]
+    if: >-
+      always() && needs.render.result == 'success' && needs.render.outputs.keep == 'true'
+      && (needs.deploy.result == 'success' || (needs.deploy.result == 'skipped' && github.ref_name != 'main'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache/restore@v4
+        with:
+          path: .push-fp/last
+          key: staged-fp-${{ github.run_id }}
+          fail-on-cache-miss: true
+
+      - uses: actions/cache/save@v4
         with:
           path: .push-fp/last
           key: push-fp-${{ github.run_id }}

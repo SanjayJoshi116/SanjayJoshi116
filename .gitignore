@@ -8,6 +8,7 @@ venv/
 *.tmp
 .env
 .push-fp/
+site/
 
 # Claude Code per-user settings
 .claude/settings.local.json

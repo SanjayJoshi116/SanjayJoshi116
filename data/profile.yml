@@ -8,6 +8,11 @@ name: Sanjay Joshi
 # One plain sentence or two, shown left of the contribution chart in the hero.
 intro: Software developer at Agrileaf. I build React and Django apps by day, and NSE trading systems and ML on the side.
 
+# GitHub Pages landing site (render_profile.py --site). Absolute base URL for preview tags;
+# must be https:// and end with /.
+site:
+  url: https://sanjayjoshi116.github.io/SanjayJoshi116/
+
 featured:
   # Newest 2 by pushed_at are featured. Forks are always skipped.
   public:
