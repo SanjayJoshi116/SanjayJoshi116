@@ -46,9 +46,14 @@ projects:
   # featured private candidates. `card.repo` is "owner/name"; rotation by pushed_at
   # only happens when every card has a repo the token can read, otherwise the first
   # 2 cards in file order are featured.
+  # Versions: with a token, a card's version is read from its repo's default branch
+  # (first of VERSION, pyproject.toml, package.json, or `card.version_from: <path>`)
+  # and shown as v<major>.<minor>. `version` below is then only the fallback for runs
+  # without a token, or the value used with `card.version_from: manual`. Projects
+  # without a card always show their `version`.
   private:
     - title: SwingTrade AI
-      version: v0.41
+      version: v0.58
       summary: NSE swing-trade screener with 23 setup detectors, regime detection, risk-based sizing, alerts and a 24-strategy backtester
       stack: [Django, Celery, Redis, React, TypeScript]
       card:
@@ -78,7 +83,7 @@ projects:
         summary: Finds open-source issues that fit your GitHub skills and explains each match.
         tags: [Django, Celery, pgvector, React, TypeScript]
     - title: Expense Tracker
-      version: v1.7
+      version: v1.24
       summary: self-hosted personal finance app covering budgets, debts, investments and net worth, with 20+ planning tools
       stack: [React 19, Django 6, Celery, PostgreSQL]
       card:

@@ -23,6 +23,7 @@ import os
 import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -72,7 +73,9 @@ MONO = "ui-monospace,SFMono-Regular,Consolas,Menlo,monospace"
 
 
 class RenderError(Exception):
-    pass
+    def __init__(self, msg, status=None):
+        super().__init__(msg)
+        self.status = status  # HTTP status code for API errors, so callers never parse the message
 
 
 # ---------------------------------------------------------------- GitHub API
@@ -81,16 +84,17 @@ class GitHub:
     def __init__(self, token):
         self.token = token
 
-    def _request(self, url, data=None, auth=True, accept="application/vnd.github+json"):
+    def _request(self, url, data=None, auth=True, accept="application/vnd.github+json", raw=False):
         headers = {"Accept": accept, "User-Agent": "profile-renderer"}
         if auth and self.token:
             headers["Authorization"] = f"Bearer {self.token}"
         req = urllib.request.Request(url, data=data, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
-                return resp.read().decode("utf-8")
+                body = resp.read()
+                return body if raw else body.decode("utf-8")
         except urllib.error.HTTPError as e:
-            raise RenderError(f"HTTP {e.code} from {url.split('?')[0]}") from None
+            raise RenderError(f"HTTP {e.code} from {url.split('?')[0]}", status=e.code) from None
         except urllib.error.URLError as e:
             raise RenderError(f"network error: {e.reason}") from None
         except (OSError, http.client.HTTPException) as e:
@@ -109,6 +113,105 @@ class GitHub:
 
     def html(self, url):
         return self._request(url, auth=False, accept="text/html")
+
+    def raw(self, repo, path):
+        """A file's bytes from a repo's default branch, or None if it doesn't exist (404).
+        Callers must not print the error message: the URL in it names a private repo."""
+        try:
+            return self._request(f"{API}/repos/{repo}/contents/{urllib.parse.quote(path)}",
+                                 accept="application/vnd.github.raw", raw=True)
+        except RenderError as e:
+            if e.status == 404:
+                return None
+            raise
+
+
+# ---------------------------------------------------------------- card versions
+
+VERSION_FILES = ("VERSION", "pyproject.toml", "package.json")  # auto-detect order; first existing file decides
+VERSION_RE = re.compile(r"^[vV]?(\d+)\.(\d+)(?:\.\d+)*(?:[-+.][0-9A-Za-z.-]+)?$")
+
+
+def decode_text(data):
+    """Bytes of a small text file: UTF-16 when it has a UTF-16 BOM (PowerShell 5.1's default),
+    else UTF-8 with any BOM dropped. None if it doesn't decode."""
+    try:
+        if data[:2] in (b"\xff\xfe", b"\xfe\xff"):
+            return data.decode("utf-16")
+        return data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return None
+
+
+def version_label(path, data):
+    """`v<major>.<minor>` from a version file's bytes, or None if it holds no valid version.
+    The raw value is never returned or printed: only digits and dots leave this function."""
+    text = decode_text(data)
+    if text is None:
+        return None
+
+    def table(d, key):
+        v = d.get(key) if isinstance(d, dict) else None
+        return v if isinstance(v, dict) else {}
+
+    try:
+        if path.endswith(".toml"):
+            import tomllib  # only needed here; keeps every other mode free of the 3.11+ module
+            doc = tomllib.loads(text)
+            value = (table(doc, "project").get("version") or table(table(doc, "tool"), "poetry").get("version")
+                     or table(doc, "package").get("version"))  # PEP 621, Poetry, Cargo
+        elif path.endswith(".json"):
+            doc = json.loads(text)
+            value = doc.get("version") if isinstance(doc, dict) else None
+        else:
+            value = text.strip()
+    except ValueError:  # TOMLDecodeError and JSONDecodeError
+        return None
+    m = VERSION_RE.match(value) if isinstance(value, str) else None
+    return f"v{int(m[1])}.{int(m[2])}" if m else None
+
+
+def version_source(project, n):
+    """card #n's `version_from`, normalised: None (auto-detect), "manual", or a repo path.
+    Checked on every run, token or not, so a bad value fails locally before CI."""
+    if "version_from" in project:
+        raise RenderError(f"private card #{n}: version_from belongs under card:, not on the project")
+    source = project["card"].get("version_from")
+    if source is None:
+        return None
+    if not isinstance(source, str) or not source.strip().lstrip("/") or ".." in source:
+        raise RenderError(f"private card #{n}: version_from must be a file path in the repo or 'manual'")
+    source = source.strip().lstrip("/")
+    return "manual" if source.casefold() == "manual" else source
+
+
+def card_version(gh, repo, source, n):
+    """The version label read from card #n's repo (whose readability is already checked), or
+    None for `manual`. Errors name the card by number only, never the repo, a path's content
+    or the value."""
+    if source == "manual":
+        return None
+    for path in [source] if source else VERSION_FILES:
+        try:
+            data = gh.raw(repo, path)
+        except RenderError as e:
+            if e.status == 403:
+                raise RenderError(f"private card #{n}: the token can't read file contents (it needs "
+                                  "Contents: read, or the API rate limit was hit); grant it or set "
+                                  "version_from: manual") from None
+            reason = f"HTTP {e.status}" if e.status else "network error"
+            raise RenderError(f"private card #{n}: could not read its version file ({reason})") from None
+        if data is None:
+            continue
+        label = version_label(path, data)
+        if not label:
+            raise RenderError(f"private card #{n}: its version file has no valid version "
+                              "(expected e.g. 1.2.3); fix it or set card.version_from")
+        return label
+    if source:
+        raise RenderError(f"private card #{n}: its version_from file was not found")
+    raise RenderError(f"private card #{n}: no version file found ({', '.join(VERSION_FILES)}); "
+                      "set card.version_from")
 
 
 def card_repos(cfg):
@@ -158,7 +261,7 @@ def public_repos(gh, user):
                     return repos
                 cursor = page["pageInfo"]["endCursor"]
         except RenderError as e:
-            if not str(e).startswith("HTTP 401"):
+            if e.status != 401:
                 raise
     repos, n = [], 1
     while True:
@@ -185,24 +288,38 @@ def gather(cfg, gh):
         raise RenderError("fewer than 2 public allowlist repos found")
 
     # Featured private candidates: projects with a card, title/version defined once on the project.
-    private_cfg = []
+    # Titles identify a private project everywhere (versions, case pages), so they must be unique.
+    dup = sorted(t for t, c in Counter(p["title"] for p in cfg["projects"]["private"]).items() if c > 1)
+    if dup:
+        raise RenderError(f"private projects share a title: {', '.join(dup)}")
+    # One pass: each card's entry (with a token: repo readable, push time, version read from the
+    # repo unless `manual`) and the All projects copy carrying the same resolved version, so
+    # cards, pulse rows, All projects and the site all show one label.
+    private_cfg, private_all = [], []
     for p in cfg["projects"]["private"]:
         if "card" in p:
+            n = len(private_cfg) + 1
             if not p.get("version"):
                 raise RenderError(f"private project {p['title']!r} has a card but no version")
-            private_cfg.append({**p["card"], "title": p["title"], "version": p["version"]})
+            source = version_source(p, n)
+            entry = {**p["card"], "title": p["title"], "version": p["version"]}
+            if gh.token and entry.get("repo"):
+                try:
+                    entry["pushed"] = gh.get(f"/repos/{entry['repo']}")["pushed_at"]
+                except RenderError:
+                    raise RenderError(f"private card #{n} is not readable with the token") from None
+                entry["version"] = card_version(gh, entry["repo"], source, n) or p["version"]
+            private_cfg.append(entry)
+            p = {**p, "version": entry["version"]}
+        elif "version_from" in p:
+            raise RenderError(f"private project #{len(private_all) + 1}: version_from only works under a card")
+        private_all.append(p)
     if len(private_cfg) < 2:
         raise RenderError("fewer than 2 private projects have a card")
     private = [dict(e) for e in private_cfg]
     private_repos = []
     if gh.token and card_repos(cfg):
-        for i, e in enumerate(private):
-            try:
-                r = gh.get(f"/repos/{e['repo']}")
-            except RenderError:
-                raise RenderError(f"private allowlist entry #{i + 1} is not readable with the token") from None
-            e["pushed"] = r["pushed_at"]
-            private_repos.append(e["repo"])
+        private_repos = [e["repo"] for e in private]
         private.sort(key=lambda e: e["pushed"], reverse=True)
     # System diagram: at most one private project carries one; copy only, no API data.
     with_diagram = [p for p in cfg["projects"]["private"] if p.get("diagram")]
@@ -300,7 +417,7 @@ def gather(cfg, gh):
     # public_all: every public candidate (newest first) with its URL, for case-study pages.
     return {"public": public[:2], "private": private[:2], "public_all": public,
             "stats": stats, "langs": totals, "days": days,
-            "rows": rows, "private_all": cfg["projects"]["private"], "pulse": pulse, "diagram": diagram,
+            "rows": rows, "private_all": private_all, "pulse": pulse, "diagram": diagram,
             "private_repos": [e["repo"] for e in private_cfg if e.get("repo")]}
 
 
@@ -379,7 +496,8 @@ def case_studies(cfg, data):
                 "approach": approach, "outcome": outcome}
         if private:
             card = e["card"]
-            page.update(summary=card["summary"], tags=card["tags"], version=e.get("version"), **{"with": e.get("with")})
+            page.update(summary=card["summary"], tags=card["tags"], version=next(q["version"] for q in data["private_all"] if q["title"] == title),
+                        **{"with": e.get("with")})
         else:
             if e["repo"] not in urls:
                 continue  # repo missing or a fork: no page, same as the featured cards
