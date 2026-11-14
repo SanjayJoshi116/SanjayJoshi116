@@ -43,5 +43,5 @@
 
 - [x] 7.1 Local `--site` run: open `site/index.html` from disk in light and dark, and at 360 px; check every section, link and image
 - [x] 7.2 Local default run: `assets/` and `README.md` identical to a run before this change, and `site/` untouched
-- [ ] 7.3 Branch: Settings → Pages → Source = GitHub Actions; dispatch the workflow on the branch, download the site artifact and review desktop light, desktop dark and mobile; confirm nothing was deployed
-- [ ] 7.4 After merge: dispatch on `main`, confirm `site.url` serves the page, and check the preview in a link preview tool
+- [x] 7.3 Branch: Settings → Pages → Source = GitHub Actions; dispatch the workflow on the branch, download the site artifact and review desktop light, desktop dark and mobile; confirm nothing was deployed
+- [x] 7.4 After merge: dispatch on `main`, confirm `site.url` serves the page, and check the preview in a link preview tool

@@ -20,6 +20,16 @@ featured:
       title: CINE DB
       summary: Movie & TV tracker built on TMDB, with ML recommendations, watchlists and E2E tests.
       tags: [React, TypeScript, Django, Playwright]
+      # Optional case-study page on the landing site (projects/<slug>/). Allowed on these
+      # featured.public entries and on private projects with a card.
+      case:
+        problem: Tracking what I had watched and what to watch next, across movies and TV, meant juggling lists in several apps, with recommendations I couldn't tune.
+        approach:
+          - Django REST API over TMDB data, with PostgreSQL storing watchlists and history
+          - React and TypeScript front end for search, title details and watchlists
+          - An ML recommendation layer that ranks titles from what has been watched
+          - Playwright end-to-end tests covering the main user flows
+        outcome: One place to track movies and TV, with personal recommendations, and end-to-end tests guarding every change.
     - repo: movie-dash-v2
       title: MovieDash v2
       summary: Movie analytics dashboard with a poster grid, 6 stats tabs, a hardened Express API and themes.
@@ -55,6 +65,10 @@ projects:
           - {title: 23 detectors, detail: "breakouts, pullbacks, reversals"}
           - {title: Scan + score, detail: "weighted score, veto layer"}
           - {title: Alerts, detail: "email, Telegram"}
+      # Case-study page; with no `approach`, the diagram stages above are used.
+      case:
+        problem: Scanning 750+ NSE stocks by hand for swing setups each evening is slow and inconsistent, and it's hard to tell which setups work in the current market regime.
+        outcome: A ranked daily shortlist of setups with risk-based position sizes, sent as alerts, plus a 24-strategy backtester to check what holds up before risking money.
     - title: Contribution Finder
       version: v0.12
       summary: matches a developer's GitHub skills to open-source repos and issues, with an evidence-backed reason for every pick

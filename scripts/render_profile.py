@@ -16,7 +16,6 @@ every step succeeds, so a failed run never leaves assets half-updated.
 
 import argparse
 import hashlib
-import html
 import http.client
 import io
 import json
@@ -56,11 +55,17 @@ LANG_COLORS = [BLUE, LEAF, VIOLET, CYAN, "#F472B6", "#C9D1D9"]
 # Card surface; check_contrast() proves every text colour stays AA on it.
 SURFACE = "#0F1424"
 
-# Landing page themes (--site). Cards stay dark SVGs in both; these colour the page around them.
+# Landing page themes (--site). Everything on the page, cards and chart included, takes its
+# colours from the active theme. `bg` is the page, `panel` the card surface; PAGE_TEXT tokens
+# are used for text and checked against both. The light theme uses darker accents, since the
+# card palette's blue is about 2.4:1 on white.
 PAGE = {
-    "light": {"bg": "#FFFFFF", "text": "#1F2328", "muted": "#59636E", "link": "#0969DA", "line": "#D1D9E0"},
-    "dark": {"bg": "#0D1117", "text": TEXT, "muted": MUTED, "link": BLUE, "line": "#30363D"},
+    "light": {"bg": "#FFFFFF", "panel": "#F6F8FA", "text": "#1F2328", "muted": "#59636E", "link": "#0969DA",
+              "accent": "#0969DA", "leaf": "#1A7F37", "amber": "#9A6700", "line": "#D1D9E0"},
+    "dark": {"bg": "#0D1117", "panel": "#161B22", "text": TEXT, "muted": MUTED, "link": BLUE,
+             "accent": BLUE, "leaf": LEAF, "amber": AMBER, "line": "#30363D"},
 }
+PAGE_TEXT = ("text", "muted", "link", "accent", "leaf", "amber")
 
 SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"
 MONO = "ui-monospace,SFMono-Regular,Consolas,Menlo,monospace"
@@ -292,9 +297,100 @@ def gather(cfg, gh):
     if not totals:
         raise RenderError("no language data")
 
-    return {"public": public[:2], "private": private[:2], "stats": stats, "langs": totals, "days": days,
+    # public_all: every public candidate (newest first) with its URL, for case-study pages.
+    return {"public": public[:2], "private": private[:2], "public_all": public,
+            "stats": stats, "langs": totals, "days": days,
             "rows": rows, "private_all": cfg["projects"]["private"], "pulse": pulse, "diagram": diagram,
             "private_repos": [e["repo"] for e in private_cfg if e.get("repo")]}
+
+
+# ---------------------------------------------------------------- case studies
+
+CASE_FIELDS = ("problem", "approach", "outcome", "slug")
+
+
+def case_studies(cfg, data):
+    """Validate every `case` block and return one page model per case study.
+
+    Allowed on featured candidates only: `featured.public` entries and private projects
+    with a card. Runs on every render (the README ignores the result), so a bad block
+    fails locally too. A public candidate whose repo is missing or a fork gets no page.
+    """
+    def fail(title, msg):
+        raise RenderError(f"case study for {title!r}: {msg}")
+
+    def text(title, case, key):
+        v = case.get(key)
+        if not (isinstance(v, str) and v.strip()):
+            fail(title, f"needs a non-empty {key}")
+        return " ".join(v.split())
+
+    candidates = [(e, False) for e in cfg["featured"]["public"]]
+    candidates += [(p, True) for p in cfg["projects"]["private"] if "card" in p]
+
+    # Any other `case` key anywhere in the file (under card:, diagram:, a group, the top level…)
+    # is a mistake that would otherwise be ignored. Paths hold keys and indexes only, no names.
+    allowed = {id(e) for e, _ in candidates}
+
+    def stray(node, path):
+        if isinstance(node, dict):
+            if "case" in node and id(node) not in allowed:
+                raise RenderError(f"a case block at {path or 'the top level'} is not allowed; put it on a "
+                                  "featured.public entry or a private project with a card")
+            for k, v in node.items():
+                stray(v, f"{path}.{k}" if path else str(k))
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                stray(v, f"{path}[{i}]")
+
+    stray(cfg, "")
+    urls = {e["repo"]: e["url"] for e in data["public_all"]}
+    pages, by_slug = [], {}
+    for e, private in candidates:
+        case = e.get("case")
+        if case is None:
+            continue
+        title = e["title"]
+        if not isinstance(case, dict):
+            fail(title, "case must be a mapping")
+        unknown = sorted(set(case) - set(CASE_FIELDS))
+        if unknown:
+            fail(title, f"unknown field {', '.join(unknown)}")
+        problem, outcome = text(title, case, "problem"), text(title, case, "outcome")
+        if "approach" in case:
+            steps = case["approach"]
+            if not (isinstance(steps, list) and steps and all(isinstance(x, str) and x.strip() for x in steps)):
+                fail(title, "approach must be a non-empty list of steps")
+            approach = [(" ".join(x.split()), None) for x in steps]
+        elif private and e.get("diagram"):
+            approach = [(st["title"], st["detail"]) for st in e["diagram"]["stages"]]
+        else:
+            fail(title, "needs an approach (only a private project with a diagram may leave it out)")
+        page_slug = case.get("slug", slug(title))
+        if not (isinstance(page_slug, str) and re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", page_slug)):
+            fail(title, "case.slug must be lowercase letters, digits and single hyphens" if "slug" in case
+                 else "the title gives no usable page address; set case.slug")
+        if page_slug in by_slug:
+            # The slug itself is never printed: it may equal a private repo name.
+            raise RenderError(f"case studies for {by_slug[page_slug]!r} and {title!r} have the same page "
+                              "address; set a different case.slug")
+        by_slug[page_slug] = title
+        page = {"slug": page_slug, "title": title, "private": private, "problem": problem,
+                "approach": approach, "outcome": outcome}
+        if private:
+            card = e["card"]
+            page.update(summary=card["summary"], tags=card["tags"], version=e.get("version"), **{"with": e.get("with")})
+        else:
+            if e["repo"] not in urls:
+                continue  # repo missing or a fork: no page, same as the featured cards
+            page.update(summary=e["summary"], tags=e["tags"], url=urls[e["repo"]], repo=e["repo"])
+        pages.append(page)
+    # The site finds a project's page by (private, title), so a title with a page must be unique.
+    titles = Counter((pr, e["title"]) for e, pr in candidates)
+    for c in pages:
+        if titles[(c["private"], c["title"])] > 1:
+            raise RenderError(f"case study for {c['title']!r}: another featured candidate has the same title")
+    return pages
 
 
 # ---------------------------------------------------------------- contrast
@@ -322,7 +418,8 @@ def check_contrast():
     og.png) and each landing-page theme."""
     # Violet is decorative only (accent lines, language bar); it's not used for text.
     surfaces = [("card", SURFACE, (TEXT, MUTED, BLUE, LEAF, AMBER, CYAN))]
-    surfaces += [(f"page {t}", c["bg"], (c["text"], c["muted"], c["link"])) for t, c in PAGE.items()]
+    surfaces += [(f"page {t} {surface}", c[surface], tuple(c[k] for k in PAGE_TEXT))
+                 for t, c in PAGE.items() for surface in ("bg", "panel")]
     worst = {f"{name} {fg}": _ratio(fg, bg) for name, bg, fgs in surfaces for fg in fgs}
     failing = {k: round(v, 2) for k, v in worst.items() if v < 4.5}
     if failing:
@@ -451,6 +548,17 @@ def weekly(days):
     return [(days[i][0], sum(n for _, n in days[i:i + 7])) for i in range(0, len(days), 7)]
 
 
+def weekly_peak(weeks):
+    return max(n for _, n in weeks)
+
+
+def chart_points(weeks, x0, x1, top, base):
+    """Weekly totals scaled into a price-line box: the hero SVG and the site chart share it."""
+    peak = weekly_peak(weeks) or 1  # an all-zero year draws a flat line
+    step = (x1 - x0) / (len(weeks) - 1)
+    return [(x0 + i * step, base - n / peak * (base - top)) for i, (_, n) in enumerate(weeks)]
+
+
 def render_hero(cfg, stats, days):
     w, h = 840, 260
     intro = wrap(cfg["intro"], svg_measure(17), 360, 4)
@@ -458,9 +566,8 @@ def render_hero(cfg, stats, days):
     # Contribution chart: weekly totals drawn like a price line.
     weeks = weekly(days)
     x0, x1, top, base = 470, 800, 92, 196
-    peak = max(n for _, n in weeks) or 1
-    step = (x1 - x0) / (len(weeks) - 1)
-    pts = [(x0 + i * step, base - n / peak * (base - top)) for i, (_, n) in enumerate(weeks)]
+    peak = weekly_peak(weeks)
+    pts = chart_points(weeks, x0, x1, top, base)
     line = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
     area = f"{x0},{base} {line} {x1},{base}"
     lx, ly = pts[-1]
@@ -499,14 +606,18 @@ def render_hero(cfg, stats, days):
     )
 
 
+CARD_LABELS = {False: "Public repo", True: "Private, in development"}
+
+
+def card_corner(entry, private):
+    """Top-right of a featured card: the version for private work, stars for a public repo."""
+    return entry["version"] if private else f"★ {entry['stars']}"
+
+
 def render_card(entry, private):
     w, h = 420, 200
-    if private:
-        label, color, accent = "Private, in development", AMBER, (AMBER, VIOLET)
-        corner = entry["version"]
-    else:
-        label, color, accent = "Public repo", BLUE, (BLUE, VIOLET)
-        corner = f"★ {entry['stars']}"
+    label, corner = CARD_LABELS[private], card_corner(entry, private)
+    color, accent = (AMBER, (AMBER, VIOLET)) if private else (BLUE, (BLUE, VIOLET))
     summary = wrap(entry["summary"], svg_measure(13.5), w - 72, 2)
     kind = "Private project" if private else "Public repo"
     body = (
@@ -561,11 +672,14 @@ def render_stack(cfg):
     )
 
 
+STAT_TILES = [("commits", "public commits"), ("prs", "pull requests"), ("stars", "stars earned"),
+              ("repos", "public repos")]
+
+
 def render_stats(stats):
     w, h = 420, 200
-    tiles = [("commits", "public commits"), ("prs", "pull requests"), ("stars", "stars earned"), ("repos", "public repos")]
     tile_svg = ""
-    for i, (key, label) in enumerate(tiles):
+    for i, (key, label) in enumerate(STAT_TILES):
         x = 36 + (i % 2) * 176
         y = 100 + (i // 2) * 58
         tile_svg += (
@@ -582,8 +696,7 @@ def render_stats(stats):
 
 
 def stats_alt(stats):
-    return (f"GitHub activity: {fmt(stats['commits'])} public commits, {fmt(stats['prs'])} pull requests, "
-            f"{fmt(stats['stars'])} stars earned, {fmt(stats['repos'])} public repos.")
+    return "GitHub activity: " + ", ".join(f"{fmt(stats[k])} {label}" for k, label in STAT_TILES) + "."
 
 
 def lang_shares(langs, top):
@@ -645,6 +758,9 @@ def pulse_age(pushed, now):
             return days, f"{n}{unit} ago", f"{n} {word}{'s' if n != 1 else ''} ago"
 
 
+FRESH_DAYS = 7  # active within a week: green dot on the pulse strip, green age on the site
+
+
 def pulse_alt(rows, now):
     return "Private work, last active: " + ", ".join(f"{r['title']} {pulse_age(r['pushed'], now)[2]}" for r in rows)
 
@@ -659,7 +775,7 @@ def render_pulse(rows, now):
     for i, r in enumerate(rows):
         y = top + i * row_h
         days, short, _ = pulse_age(r["pushed"], now)
-        dot = LEAF if days <= 7 else CYAN if days <= 30 else MUTED
+        dot = LEAF if days <= FRESH_DAYS else CYAN if days <= 30 else MUTED
         version_x = 56 + text_w(r["title"], 14, True) + 10
         if version_x + text_w(r["version"], 12, avg=0.6) + 16 > age_left:
             raise RenderError(f"pulse row {i + 1} title and version are too long; shorten them")
@@ -753,16 +869,18 @@ def card_name(i, private):
 
 
 def featured_cards(data):
-    """Featured sections as (heading, [(href, asset name)]), shared by the README and the site.
-    Private cards never link to their repo, only to the All projects section."""
+    """Featured sections as (heading, private, [(entry, default href, card file name)]), shared by
+    the README and the site. Private cards never link to their repo, only to All projects."""
     return [
-        ("Shipped in public", [(e["url"], card_name(i, False)) for i, e in enumerate(data["public"], 1)]),
-        ("Building in private", [(f"#{PROJECTS_ID}", card_name(i, True)) for i, e in enumerate(data["private"], 1)]),
+        ("Shipped in public", False,
+         [(e, e["url"], card_name(i, False)) for i, e in enumerate(data["public"], 1)]),
+        ("Building in private", True,
+         [(e, f"#{PROJECTS_ID}", card_name(i, True)) for i, e in enumerate(data["private"], 1)]),
     ]
 
 
 def chart_alt(data):
-    peak = max(n for _, n in weekly(data["days"]))
+    peak = weekly_peak(weekly(data["days"]))
     return (f"Chart: {fmt(data['stats']['contributions'])} contributions in the past year, "
             f"peaking at {peak} in one week.")
 
@@ -777,8 +895,8 @@ def stack_alt(cfg):
 
 
 def asset_alts(cfg, data, now):
-    """Alt text for every asset this run renders, keyed by file name; the README and the site
-    both use it. A pulse.svg left untouched (no token) is not here: the site reads its <desc>."""
+    """Alt text for every asset this run renders, keyed by file name, for the README's <img> tags.
+    A pulse.svg left untouched (no token) has no entry: its README region is not rewritten."""
     alts = {
         "hero.svg": f"{cfg['name']}. {cfg['intro']} {chart_alt(data)}",
         "stack.svg": stack_alt(cfg),
@@ -841,8 +959,8 @@ def featured_block(data, alts):
         return f'<a href="{attr(href)}"><img src="assets/{name}" width="49%" alt="{attr(alts[name])}"></a>'
 
     return "\n\n".join(
-        f"**{heading}**\n\n" + '<p align="center">\n' + "\n".join(cell(*c) for c in cards) + "\n</p>"
-        for heading, cards in featured_cards(data)
+        f"**{heading}**\n\n" + '<p align="center">\n' + "\n".join(cell(href, name) for _, href, name in cards) + "\n</p>"
+        for heading, _, cards in featured_cards(data)
     )
 
 
@@ -974,89 +1092,146 @@ OG_FONTS = [
 
 
 def og_fonts():
-    """(regular, bold) font paths for og.png."""
+    """(regular, bold) font paths for the preview images."""
     pair = next((p for p in OG_FONTS if all(Path(f).exists() for f in p)), None)
     if not pair:
         raise RenderError("no font found for og.png (on Ubuntu: apt-get install fonts-dejavu-core)")
     return pair
 
 
-def render_og(cfg, url, private_repos):
-    """1200x630 link-preview PNG: flat dark card with the name, intro and site address."""
+def og_renderer():
+    """A function drawing one 1200x630 preview PNG (flat dark card: title, wrapped body, footer).
+    Pillow and the fonts load once per run, however many pages there are."""
     Image, ImageDraw, ImageFont = load_pillow()
     regular, bold = og_fonts()
+    f_title, f_body, f_foot = (ImageFont.truetype(bold, 76), ImageFont.truetype(regular, 36),
+                               ImageFont.truetype(regular, 28))
     w, h, x, max_w = 1200, 630, 80, 1040
-    f_name = ImageFont.truetype(bold, 76)
-    f_intro = ImageFont.truetype(regular, 36)
-    f_url = ImageFont.truetype(regular, 28)
-    name, host = cfg["name"], url.split("://", 1)[1].rstrip("/")
-    if f_name.getlength(name) > max_w:
-        raise RenderError("the name line is too wide for og.png; shorten name in data/profile.yml")
-    if f_url.getlength(host) > max_w:
-        raise RenderError("the site.url line is too wide for og.png")
-    intro = wrap(cfg["intro"], f_intro.getlength, max_w, 4, box="the og.png intro")
-    for t in [name, host, *intro]:
-        check_no_private_names(t, private_repos, "site/og.png")
 
-    img = Image.new("RGB", (w, h), SURFACE)
-    d = ImageDraw.Draw(img)
-    # Top accent line, blue to leaf, as on the hero card.
-    c1, c2 = _rgb(BLUE), _rgb(LEAF)
-    for i in range(w):
-        t = i / (w - 1)
-        d.line([(i, 0), (i, 5)], fill=tuple(round(a + (b - a) * t) for a, b in zip(c1, c2)))
-    d.rectangle([0, 0, w - 1, h - 1], outline=(40, 46, 62))
-    d.text((x, 150), name, font=f_name, fill=TEXT)
-    for i, line in enumerate(intro):
-        d.text((x, 270 + i * 52), line, font=f_intro, fill=MUTED)
-    d.text((x, h - 80), host, font=f_url, fill=BLUE)
-    buf = io.BytesIO()
-    img.save(buf, "PNG", optimize=True)
-    return buf.getvalue()
+    def draw(title, body, footer, private_repos, where):
+        if f_title.getlength(title) > max_w:
+            raise RenderError(f"the title line of {where} is too wide; shorten it in data/profile.yml")
+        if f_foot.getlength(footer) > max_w:
+            raise RenderError(f"the footer line of {where} is too wide")
+        lines = wrap(body, f_body.getlength, max_w, 4, box=f"the body of {where}")
+        for t in [title, footer, *lines]:
+            check_no_private_names(t, private_repos, where)
+        img = Image.new("RGB", (w, h), SURFACE)
+        d = ImageDraw.Draw(img)
+        # Top accent line, blue to leaf, as on the hero card.
+        c1, c2 = _rgb(BLUE), _rgb(LEAF)
+        for i in range(w):
+            t = i / (w - 1)
+            d.line([(i, 0), (i, 5)], fill=tuple(round(a + (b - a) * t) for a, b in zip(c1, c2)))
+        d.rectangle([0, 0, w - 1, h - 1], outline=(40, 46, 62))
+        d.text((x, 150), title, font=f_title, fill=TEXT)
+        for i, line in enumerate(lines):
+            d.text((x, 270 + i * 52), line, font=f_body, fill=MUTED)
+        d.text((x, h - 80), footer, font=f_foot, fill=BLUE)
+        buf = io.BytesIO()
+        img.save(buf, "PNG", optimize=True)
+        return buf.getvalue()
 
-
-def svg_desc(content, name):
-    """The alt text an SVG carries as <desc id="d">."""
-    m = re.search(r'<desc id="d">(.*?)</desc>', content, re.S)
-    if not m:
-        raise RenderError(f"assets/{name} has no <desc>; re-render it with a token")
-    return html.unescape(m.group(1))
+    return draw
 
 
 def css_vars(theme):
     return ";".join(f"--{k}:{v}" for k, v in PAGE[theme].items())
 
 
+# .print-only shows only on paper; .screen-only (hidden in print) marks everything left off the CV.
 SITE_CSS = (
     f":root{{color-scheme:light dark;{css_vars('light')}}}\n"
     f"@media (prefers-color-scheme:dark){{:root{{{css_vars('dark')}}}}}\n"
     f"body{{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 {SANS}}}\n"
+    f".mono{{font-family:{MONO}}}\n"
 ) + """
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-main{max-width:880px;margin:0 auto;padding:24px 16px 48px}
+main{max-width:920px;margin:0 auto;padding:32px 16px 56px}
 a{color:var(--link)}
-img{display:block;max-width:100%;height:auto}
-h2{font-size:1.15rem;margin:40px 0 12px}
-h3{font-size:1rem;margin:24px 0 8px}
-.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.grid>a,.grid>img{min-width:0}
-.below{margin-top:12px}
+h1{font-size:2.4rem;line-height:1.1;letter-spacing:-.02em;margin:0 0 12px}
+h2{font-size:1.2rem;margin:48px 0 14px}
+h3{font-size:1.05rem;margin:0}
+p{margin:0 0 12px}
+ul,ol{margin:0;padding:0}
 .muted{color:var(--muted)}
-details{margin-top:24px}
-summary{cursor:pointer;font-weight:600}
-.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.scroll>img{min-width:640px}
-ul.private{padding-left:20px}
+.lead{font-size:1.15rem;color:var(--muted)}
+.print-only{display:none}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}
+.chart{margin:0}
+.chart svg{display:block;width:100%;height:auto}
+.chart figcaption{font-size:.9rem;color:var(--muted);margin-top:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{display:block;position:relative;padding:18px 18px 16px;color:var(--text);text-decoration:none;
+  border-top:3px solid var(--accent);min-width:0}
+.card.private{border-top-color:var(--amber)}
+a.card:hover h3,a.card:focus-visible h3{text-decoration:underline}
+.card p{color:var(--muted);margin:6px 0 10px;display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+a.case{font-size:.85rem;white-space:nowrap}
+.meta{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;font-weight:600;margin-bottom:8px}
+.badge{color:var(--accent)}
+.private .badge{color:var(--amber)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;list-style:none}
+.tags li{font-size:.8rem;padding:2px 9px;border:1px solid var(--line);border-radius:999px;color:var(--text)}
+.now ul{list-style:none}
+.now li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.now .age{margin-left:auto;font-size:.9rem;color:var(--muted)}
+.now .age.fresh{color:var(--leaf)}
+.stack .row{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.stack .row:last-child{border-bottom:0}
+.stack .label{font-weight:700;font-size:.85rem;color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;list-style:none;margin-bottom:18px}
+.stats li{padding:14px}
+.stats strong{display:block;font-size:1.5rem}
+.stats span{font-size:.85rem;color:var(--muted)}
+.langbar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-bottom:10px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;list-style:none;font-size:.9rem}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+ul.private{list-style:disc;padding-left:20px}
 ul.private li{margin:6px 0}
+h3.sub{margin:24px 0 8px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{border-collapse:collapse;width:100%;min-width:560px;font-size:.95rem}
 th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
 th{font-weight:600}
-.connect{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:40px}
-.connect img{height:44px;width:auto}
-footer{margin-top:40px;font-size:.85rem;text-align:center}
-@media (max-width:700px){.grid{grid-template-columns:1fr}}
+.connect{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:48px}
+.connect a{padding:9px 18px;border:1px solid var(--line);border-radius:999px;background:var(--panel);
+  color:var(--text);text-decoration:none;font-weight:600}
+.connect a:hover,.connect a:focus-visible{border-color:var(--accent)}
+footer{margin-top:40px;font-size:.85rem;text-align:center;color:var(--muted)}
+.back{display:inline-block;margin-bottom:28px}
+.steps{padding-left:22px}
+.steps li{margin:8px 0}
+@media (max-width:760px){.hero,.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}
+  .stack .row{grid-template-columns:1fr;gap:6px}h1{font-size:2rem}}
+@media print{
+  :root{--bg:#fff;--panel:#fff;--text:#000;--muted:#333;--link:#000;--accent:#000;--leaf:#000;--amber:#000;--line:#bbb}
+  @page{margin:12mm}
+  body{font-size:9.5pt;line-height:1.35}
+  main{max-width:none;padding:0}
+  a{text-decoration:none;color:inherit}
+  h1{font-size:20pt;margin-bottom:4px}
+  h2{font-size:11.5pt;margin:12px 0 5px;break-after:avoid}
+  .lead{font-size:10pt;margin-bottom:4px}
+  .screen-only{display:none!important}
+  .print-only{display:block}
+  .hero{display:block}
+  .grid{grid-template-columns:1fr 1fr;gap:6px}
+  .card{padding:6px 8px;border-top-width:1px;break-inside:avoid}
+  .card p{margin:2px 0 4px}
+  .meta{margin-bottom:2px}
+  .tags li{padding:0 6px;font-size:8pt}
+  .stack .row{grid-template-columns:110px 1fr;padding:3px 0;gap:6px}
+  .panel{border:0;border-radius:0}
+  ul.private li{margin:1px 0}
+  h3.sub{margin:8px 0 3px;font-size:10pt}
+  .scroll{overflow:visible}
+  table{min-width:0;font-size:8.5pt}
+  th,td{padding:2px 6px}
+}
 """
 
 # Meta tags with fixed values, which carry no profile content and so skip the private-name check.
@@ -1067,8 +1242,8 @@ FIXED_META = [("name", "viewport", "width=device-width,initial-scale=1"), ("name
 
 class _PageContent(HTMLParser):
     """Collects what a page says, not how it is built: text outside <style> and the href, src,
-    alt and content values, minus FIXED_META. Tag names, classes and CSS are skipped, so a
-    private repo with a generic name (connect, scroll) only matches real content."""
+    alt, aria-label and content values, minus FIXED_META. Tag names, classes and CSS are
+    skipped, so a private repo with a generic name (connect, scroll) only matches real content."""
 
     FIXED = {n for _, n, _ in FIXED_META}
 
@@ -1081,7 +1256,7 @@ class _PageContent(HTMLParser):
         self.in_style = tag == "style"
         if tag == "meta" and (a.get("name") or a.get("property")) in self.FIXED:
             return
-        self.parts += [a[k] for k in ("href", "src", "alt", "content") if a.get(k)]
+        self.parts += [a[k] for k in ("href", "src", "alt", "aria-label", "content") if a.get(k)]
 
     def handle_endtag(self, tag):
         if tag == "style":
@@ -1099,73 +1274,186 @@ def page_content(page):
     return "\n".join(p.parts)
 
 
-def render_site(cfg, data, out, alts):
-    """Landing page, preview image and the SVGs it uses, as {path: content}. Writes nothing.
-    Assets come only from `out`, this run's render (plus a pulse.svg kept as it was)."""
-    url = site_url(cfg)
-    files = {}
+def site_page(url, path, title, desc, body, tab_title=None):
+    """One complete page. `path` is its address under site.url ("" for home, "projects/x/"):
+    absolute URLs for the preview tags, relative links for everything else."""
+    page_url, image, og_alt = url + path, url + path + "og.png", f"{title}. {desc}"
+    meta = FIXED_META + [
+        ("name", "description", desc), ("property", "og:title", title), ("property", "og:description", desc),
+        ("property", "og:url", page_url), ("property", "og:image", image), ("property", "og:image:alt", og_alt),
+        ("name", "twitter:title", title), ("name", "twitter:description", desc), ("name", "twitter:image", image)]
+    return (
+        '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+        f"<title>{attr(tab_title or title)}</title>\n"
+        f'<link rel="canonical" href="{attr(page_url)}">\n'
+        + "".join(f'<meta {k}="{n}" content="{attr(v)}">\n' for k, n, v in meta)
+        + f"<style>{SITE_CSS}</style>\n</head>\n<body>\n<main>\n"
+        + body
+        + "\n</main>\n</body>\n</html>\n"
+    )
 
-    def img(name, alt=None):
-        content = out.get(ASSETS / name)
-        if content is None:
-            raise RenderError(f"the site needs assets/{name}, which this run did not render")
-        files[SITE / "assets" / name] = content
-        alt = alt or alts.get(name) or svg_desc(content, name)
-        return f'<img src="assets/{name}" alt="{attr(alt)}">'
 
+def ist_date(now):
+    return f"{now.day} {MONTHS[now.month - 1]} {now.year}"
+
+
+def chart_svg(data):
+    """The contribution chart as inline SVG, coloured by the page theme through CSS variables."""
+    w, h, pad = 600, 170, 8
+    pts = chart_points(weekly(data["days"]), pad, w - pad, pad, h - pad)
+    line = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+    lx, ly = pts[-1]
+    return (
+        f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="{attr(chart_alt(data))}">'
+        f'<polygon points="{pad},{h - pad} {line} {lx:.1f},{h - pad}" style="fill:var(--accent);fill-opacity:.12"/>'
+        f'<polyline points="{line}" style="fill:none;stroke:var(--accent);stroke-width:2.5;'
+        'stroke-linejoin:round;stroke-linecap:round"/>'
+        f'<circle cx="{lx:.1f}" cy="{ly:.1f}" r="4.5" style="fill:var(--accent)"/>'
+        f'<line x1="{pad}" y1="{h - pad}" x2="{w - pad}" y2="{h - pad}" style="stroke:var(--line)"/>'
+        "</svg>"
+    )
+
+
+def tag_list(tags):
+    return '<ul class="tags">' + "".join(f"<li>{attr(t)}</li>" for t in tags) + "</ul>"
+
+
+def address(link):
+    """A link written out for paper: no scheme, no trailing slash."""
+    return link.split("://", 1)[-1].rstrip("/")
+
+
+def home_body(cfg, data, cases, now):
+    # Projects are keyed by (private, title) everywhere: case_studies() rejects duplicate titles.
+    # Public table rows are keyed by repo, since a row's label need not match the card title.
+    case_href = {(c["private"], c["title"]): f"projects/{c['slug']}/" for c in cases}
+    repo_href = {c["repo"]: f"projects/{c['slug']}/" for c in cases if not c["private"]}
+
+    def case_link(href):
+        """Every case page is reachable from All projects, even when its card isn't featured."""
+        return f' <a class="case screen-only" href="{href}">Case study →</a>' if href else ""
+
+    def public_row(r):
+        name, stack, about = public_cells(r, HTML)
+        name += case_link(repo_href.get(r.get("repo")))
+        return f"<tr><td>{name}</td><td>{stack}</td><td>{about}</td></tr>"
     user = attr(cfg["user"])
-    # The name and intro are real text here, so the hero's alt only describes the chart.
+    contacts = " · ".join(f"{attr(e['label'])}: {attr(address(e['url']))}" for e in cfg["connect"])
     parts = [
-        f'<header><h1 class="sr-only">{attr(cfg["name"])}</h1><p class="sr-only">{attr(cfg["intro"])}</p>'
-        f'<a href="https://github.com/{user}">{img("hero.svg", chart_alt(data))}</a></header>'
+        '<header class="hero"><div>'
+        f'<h1>{attr(cfg["name"])}</h1><p class="lead">{attr(cfg["intro"])}</p>'
+        f'<p class="print-only">{contacts} · GitHub: github.com/{user}</p></div>'
+        f'<figure class="chart screen-only">{chart_svg(data)}<figcaption>{fmt(data["stats"]["contributions"])} contributions '
+        "in the past year</figcaption></figure></header>"
     ]
 
-    featured = [f'<h2>{attr(heading)}</h2><div class="grid">'
-                + "".join(f'<a href="{attr(href)}">{img(name)}</a>' for href, name in cards) + "</div>"
-                for heading, cards in featured_cards(data)]
-    if out.get(ASSETS / "pulse.svg"):
-        featured.append(f'<div class="below">{img("pulse.svg")}</div>')
-    if data["diagram"]:
-        featured.append(f"<details><summary>How {attr(data['diagram']['title'])} works</summary>"
-                        f'<div class="scroll below">{img("pipeline.svg")}</div></details>')
-    parts.append("<section>" + "".join(featured) + "</section>")
+    if data["pulse"]:
+        def now_row(r):
+            days, _, words = pulse_age(r["pushed"], now)
+            href = case_href.get((True, r["title"]))
+            title = HTML["link"](r["title"], href) if href else attr(r["title"])
+            return (f'<li><strong>{title}</strong><span class="mono muted">{attr(r["version"])}</span>'
+                    f'<span class="age{" fresh" if days <= FRESH_DAYS else ""}">active {words}</span></li>')
+
+        parts.append(f'<section class="now screen-only"><h2>Now</h2><p class="muted">What I worked on most recently, '
+                     f"as of {ist_date(now)}.</p><ul>{''.join(now_row(r) for r in data['pulse'])}</ul></section>")
+
+    def card(e, href, private):
+        href = case_href.get((private, e["title"]), href)
+        return (f'<a class="card panel{" private" if private else ""}" href="{attr(href)}">'
+                f'<span class="meta"><span class="badge">{CARD_LABELS[private]}</span>'
+                f'<span>{attr(card_corner(e, private))}</span></span>'
+                f'<h3>{attr(e["title"])}</h3><p>{attr(e["summary"])}</p>{tag_list(e["tags"])}</a>')
+
+    parts.append("<section><h2>Featured work</h2>"
+                 + "".join(f'<h3 class="sub">{attr(heading)}</h3><div class="grid">'
+                           + "".join(card(e, href, private) for e, href, _ in cards) + "</div>"
+                           for heading, private, cards in featured_cards(data))
+                 + "</section>")
+
+    parts.append('<section class="stack"><h2>Stack</h2><div class="panel">'
+                 + "".join(f'<div class="row"><span class="label">{attr(k)}</span>{tag_list(v)}</div>'
+                           for k, v in cfg["stack"].items())
+                 + "</div></section>")
 
     parts.append(
         f'<section><h2 id="{PROJECTS_ID}">All projects <span class="muted">({project_counts(data)})</span></h2>'
-        "<h3>Private, in development</h3>"
-        '<ul class="private">' + "".join(f"<li>{private_entry(p, HTML)}</li>" for p in data["private_all"]) + "</ul>"
-        "<h3>Public repos</h3>"
+        '<h3 class="sub">Private, in development</h3>'
+        '<ul class="private">'
+        + "".join(f"<li>{private_entry(p, HTML)}{case_link(case_href.get((True, p['title'])))}</li>"
+                  for p in data["private_all"]) + "</ul>"
+        # The public table is left off the printed CV (one page); the heading keeps its count.
+        '<div class="screen-only"><h3 class="sub">Public repos</h3>'
         '<div class="scroll"><table><thead><tr><th>Project</th><th>Stack</th><th>What it is</th></tr></thead><tbody>'
-        + "".join("<tr>" + "".join(f"<td>{c}</td>" for c in public_cells(r, HTML)) + "</tr>" for r in data["rows"])
-        + "</tbody></table></div></section>"
+        + "".join(public_row(r) for r in data["rows"])
+        + "</tbody></table></div></div></section>"
     )
 
-    parts.append(f"<section><h2>Stack</h2>{img('stack.svg')}</section>")
-    parts.append(f'<section><h2>Activity</h2><div class="grid">{img("stats.svg")}{img("langs.svg")}</div></section>')
-    parts.append('<nav class="connect" aria-label="Connect">'
-                 + "".join(f'<a href="{attr(e["url"])}">{img("connect-" + slug(e["label"]) + ".svg")}</a>'
-                           for e in cfg["connect"])
+    st = data["stats"]
+    stats = [(st["contributions"], "contributions, past year")] + [(st[k], label) for k, label in STAT_TILES]
+    shares = lang_shares(data["langs"], cfg["languages"].get("top", 6))
+    parts.append(
+        '<section class="activity screen-only"><h2>Activity</h2><ul class="stats">'
+        + "".join(f'<li class="panel"><strong>{fmt(n)}</strong><span>{label}</span></li>' for n, label in stats)
+        + '</ul><div class="langbar" aria-hidden="true">'
+        + "".join(f'<span style="width:{f * 100:.2f}%;background:{c}"></span>' for _, f, c in shares)
+        + '</div><ul class="legend" aria-label="Top languages by code size">'
+        + "".join(f'<li><span class="dot" style="background:{c}"></span>{attr(n)} {f * 100:.1f}%</li>'
+                  for n, f, c in shares)
+        + "</ul></section>"
+    )
+    parts.append('<nav class="connect screen-only" aria-label="Connect">'
+                 + "".join(f'<a href="{attr(e["url"])}">{attr(e["label"])}</a>' for e in cfg["connect"])
                  + "</nav>")
-    parts.append(f'<footer class="muted">Generated from <a href="https://github.com/{user}/{user}">'
-                 f"{user}/{user}</a></footer>")
+    parts.append(f'<footer class="screen-only">Updated {ist_date(now)} · Generated from '
+                 f'<a href="https://github.com/{user}/{user}">{user}/{user}</a></footer>')
+    return "\n".join(parts)
 
-    title, desc, image = cfg["name"], cfg["intro"], url + "og.png"
-    meta = FIXED_META + [
-        ("name", "description", desc), ("property", "og:title", title), ("property", "og:description", desc),
-        ("property", "og:url", url), ("property", "og:image", image), ("property", "og:image:alt", f"{title}. {desc}"),
-        ("name", "twitter:title", title), ("name", "twitter:description", desc), ("name", "twitter:image", image)]
-    page = (
-        '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-        f"<title>{attr(title)}</title>\n"
-        f'<link rel="canonical" href="{attr(url)}">\n'
-        + "".join(f'<meta {k}="{n}" content="{attr(v)}">\n' for k, n, v in meta)
-        + f"<style>{SITE_CSS}</style>\n</head>\n<body>\n<main>\n"
-        + "\n".join(parts)
-        + "\n</main>\n</body>\n</html>\n"
+
+def case_body(cfg, c, now):
+    status = CARD_LABELS[c["private"]]
+    private_class = ' class="private"' if c["private"] else ""
+    if c["private"]:
+        status += f" · {attr(c['version'])}" if c.get("version") else ""
+        w = c.get("with")
+        links = f"<p>Built with {HTML['link']('@' + w, 'https://github.com/' + w)}</p>" if w else ""
+    else:
+        links = f"<p>{HTML['link']('View the code on GitHub', c['url'])}</p>"
+    steps = "".join(f"<li><strong>{attr(t)}</strong>: {attr(d)}</li>" if d else f"<li>{attr(t)}</li>"
+                    for t, d in c["approach"])
+    return (
+        f'<a class="back screen-only" href="../../">← {attr(cfg["name"])}</a>'
+        f'<header{private_class}><p class="meta"><span class="badge">{status}</span></p>'
+        f'<h1>{attr(c["title"])}</h1><p class="lead">{attr(c["summary"])}</p>{tag_list(c["tags"])}</header>'
+        f"{links}"
+        f"<section><h2>Problem</h2><p>{attr(c['problem'])}</p></section>"
+        f'<section><h2>Approach</h2><ol class="steps">{steps}</ol></section>'
+        f"<section><h2>Outcome</h2><p>{attr(c['outcome'])}</p></section>"
+        f'<footer class="screen-only">Updated {ist_date(now)} · '
+        f'<a href="../../">More projects by {attr(cfg["name"])}</a></footer>'
     )
-    check_no_private_names(page_content(page), data["private_repos"], "site/index.html")
-    files[SITE / "index.html"] = page
-    files[SITE / "og.png"] = render_og(cfg, url, data["private_repos"])
+
+
+def render_site(cfg, data, cases, now):
+    """Home page, case-study pages and their preview images, as {path: content}. Writes nothing."""
+    url = site_url(cfg)
+    host = address(url)
+    og = og_renderer()
+    private_repos = data["private_repos"]
+    files = {}
+
+    def add(path, where, title, desc, body, og_footer, tab_title=None):
+        """A page and its preview image; the image body is the page description."""
+        page = site_page(url, path, title, desc, body, tab_title)
+        check_no_private_names(page_content(page), private_repos, where)
+        files[SITE / path / "index.html"] = page
+        files[SITE / path / "og.png"] = og(title, desc, og_footer, private_repos, f"the preview image of {where}")
+
+    add("", "site/index.html", cfg["name"], cfg["intro"], home_body(cfg, data, cases, now), host)
+    for i, c in enumerate(cases, 1):
+        # Named by number in errors: the slug in the path may equal a private repo name.
+        add(f"projects/{c['slug']}/", f"case-study page #{i}", c["title"], c["summary"], case_body(cfg, c, now),
+            f"{cfg['name']} · {host}", tab_title=f"{c['title']} — {cfg['name']}")
     return files
 
 
@@ -1232,6 +1520,7 @@ def main():
             load_pillow()
             og_fonts()
         data = gather(cfg, gh)
+        cases = case_studies(cfg, data)  # validated on every run; only the site uses them
 
         out = {
             ASSETS / "hero.svg": render_hero(cfg, data["stats"], data["days"]),
@@ -1253,11 +1542,9 @@ def main():
         elif data["pulse"] is not None:
             out[ASSETS / "pulse.svg"] = None  # None means delete: its README region is now empty
         elif (ASSETS / "pulse.svg").exists():
-            # No token: pulse.svg and its README region stay as they are. Rewriting the same
-            # content changes nothing, and the site can then mirror it from `out` alone.
-            kept = (ASSETS / "pulse.svg").read_text(encoding="utf-8")
-            check_no_private_names(kept, data["private_repos"], "assets/pulse.svg")
-            out[ASSETS / "pulse.svg"] = kept
+            # No token: pulse.svg and its README region stay as they are, but are still checked.
+            check_no_private_names((ASSETS / "pulse.svg").read_text(encoding="utf-8"), data["private_repos"],
+                                   "assets/pulse.svg")
         if data["diagram"]:
             diagram_svg = render_diagram(data["diagram"])
             check_no_private_names(diagram_svg, data["private_repos"], "assets/pipeline.svg")
@@ -1267,7 +1554,7 @@ def main():
         alts = asset_alts(cfg, data, now)
         out[README] = render_readme(README.read_text(encoding="utf-8"), cfg, data, alts)
         if args.site:
-            out.update(render_site(cfg, data, out, alts))
+            out.update(render_site(cfg, data, cases, now))
     except RenderError as e:
         print(f"render failed, nothing written: {e}", file=sys.stderr)
         return 1

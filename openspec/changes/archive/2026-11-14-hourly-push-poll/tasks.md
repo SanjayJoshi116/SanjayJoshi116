@@ -19,5 +19,5 @@
 
 ## 4. Verify
 
-- [ ] 4.1 `workflow_dispatch` on the branch: it renders, saves the cache, and logs contain no repo names, push times or digest
-- [ ] 4.2 After merge, check the first hourly runs: the first renders (cache miss) and later ones log `unchanged` and skip the render; a test push to a watched repo renders on the next poll
+- [x] 4.1 `workflow_dispatch` on the branch: it renders, saves the cache, and logs contain no repo names, push times or digest
+- [x] 4.2 After merge, check the first hourly runs: the first renders (cache miss) and later ones log `unchanged` and skip the render; a test push to a watched repo renders on the next poll
