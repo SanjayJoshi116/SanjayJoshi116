@@ -13,6 +13,9 @@ site/
 # Claude Code per-user settings
 .claude/settings.local.json
 
+# Personal notes
+suggestions.md
+
 # OS / editor
 .DS_Store
 Thumbs.db

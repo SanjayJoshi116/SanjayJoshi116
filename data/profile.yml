@@ -16,6 +16,10 @@ site:
 featured:
   # Newest 2 by pushed_at are featured. Forks are always skipped.
   public:
+    - repo: ContribFinder
+      title: Contribution Finder
+      summary: Finds open-source issues that fit your GitHub skills and explains each match.
+      tags: [Django, Celery, pgvector, React, TypeScript]
     - repo: movie-app-v2
       title: CINE DB
       summary: Movie & TV tracker built on TMDB, with ML recommendations, watchlists and E2E tests.
@@ -74,14 +78,6 @@ projects:
       case:
         problem: Scanning 750+ NSE stocks by hand for swing setups each evening is slow and inconsistent, and it's hard to tell which setups work in the current market regime.
         outcome: A ranked daily shortlist of setups with risk-based position sizes, sent as alerts, plus a 24-strategy backtester to check what holds up before risking money.
-    - title: Contribution Finder
-      version: v0.12
-      summary: matches a developer's GitHub skills to open-source repos and issues, with an evidence-backed reason for every pick
-      stack: [Django 5, DRF, Celery, pgvector, React 19, TypeScript]
-      card:
-        repo: SanjayJoshi116/ContribFinder
-        summary: Finds open-source issues that fit your GitHub skills and explains each match.
-        tags: [Django, Celery, pgvector, React, TypeScript]
     - title: Expense Tracker
       version: v1.24
       summary: self-hosted personal finance app covering budgets, debts, investments and net worth, with 20+ planning tools
@@ -123,6 +119,10 @@ projects:
   public:
     hide: [ImageResize, Extra-Curricular-Activity-Management]
     repos:
+      - repo: ContribFinder
+        label: Contribution Finder
+        stack: [Django 5, DRF, Celery, pgvector, React 19, TypeScript]
+        about: Matches your GitHub skills to open-source issues, with an evidence-backed reason for every pick
       - repo: movie-app-v2
         label: CINE DB
         stack: [React, TypeScript, Django, PostgreSQL, Playwright]
